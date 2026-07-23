@@ -28,6 +28,26 @@ func TestSVGEmptyScene(t *testing.T) {
 	}
 }
 
+func TestSVGArrowLine(t *testing.T) {
+	s := &layout.Scene{W: 300, H: 100, FontSize: 13, Items: []layout.Item{
+		layout.Line{X1: 200, Y1: 70, X2: 287, Y2: 70, Head: true},
+		layout.Line{X1: 10, Y1: 10, X2: 20, Y2: 10},
+	}}
+	var b strings.Builder
+	if err := render.SVG(s, &b); err != nil {
+		t.Fatalf("SVG: %v", err)
+	}
+	out := b.String()
+	for _, want := range []string{
+		`  <line x1="200" y1="70" x2="287" y2="70" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>` + "\n",
+		`  <line x1="10" y1="10" x2="20" y2="10" stroke="#000" stroke-width="1.5"/>` + "\n",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q\ngot:\n%s", want, out)
+		}
+	}
+}
+
 func TestSVGRectAndText(t *testing.T) {
 	s := &layout.Scene{W: 240, H: 140, FontSize: 13, Items: []layout.Item{
 		layout.Rect{X: 40, Y: 40, W: 160, H: 60},

@@ -8,6 +8,7 @@ import "github.com/bilus/dfd/ast"
 const (
 	HGap   = 90
 	Margin = 40
+	Inset  = 3 // gap between an arrow tip and the edge it points at
 )
 
 type Config struct {
@@ -21,12 +22,16 @@ type Config struct {
 func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	s := &Scene{FontSize: c.FontSize}
 	n := len(d.Steps)
+	cy := Margin + c.BoxH/2
 	for i, st := range d.Steps {
 		x := Margin + i*(c.BoxW+HGap)
 		s.Items = append(s.Items,
 			Rect{X: x, Y: Margin, W: c.BoxW, H: c.BoxH},
-			Text{X: x + c.BoxW/2, Y: Margin + c.BoxH/2 + 5, S: st.Title, Anchor: Middle},
+			Text{X: x + c.BoxW/2, Y: cy + 5, S: st.Title, Anchor: Middle},
 		)
+		if i > 0 {
+			s.Items = append(s.Items, Line{X1: x - HGap, Y1: cy, X2: x - Inset, Y2: cy, Head: true})
+		}
 	}
 	s.W = 2*Margin + n*c.BoxW + (n-1)*HGap
 	s.H = 2*Margin + c.BoxH
@@ -42,6 +47,12 @@ type Scene struct {
 type Item interface{ item() }
 
 type Rect struct{ X, Y, W, H int }
+
+// Line is a straight segment. Head draws an arrowhead at (X2,Y2).
+type Line struct {
+	X1, Y1, X2, Y2 int
+	Head           bool
+}
 
 type Anchor int
 
@@ -59,4 +70,5 @@ type Text struct {
 }
 
 func (Rect) item() {}
+func (Line) item() {}
 func (Text) item() {}

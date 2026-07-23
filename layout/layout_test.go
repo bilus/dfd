@@ -24,6 +24,26 @@ func arrange(t *testing.T, src string, c layout.Config) *layout.Scene {
 	return s
 }
 
+func TestTwoBoxesConnectedByArrow(t *testing.T) {
+	s := arrange(t, "[First]\n[Second]\n", layout.Config{})
+	var lines []layout.Line
+	for _, it := range s.Items {
+		if l, ok := it.(layout.Line); ok {
+			lines = append(lines, l)
+		}
+	}
+	if len(lines) != 1 {
+		t.Fatalf("got %d lines, want 1 arrow", len(lines))
+	}
+	want := layout.Line{X1: 200, Y1: 70, X2: 287, Y2: 70, Head: true}
+	if lines[0] != want {
+		t.Errorf("arrow = %+v, want %+v", lines[0], want)
+	}
+	if s.W != 2*layout.Margin+2*160+layout.HGap {
+		t.Errorf("scene w = %d", s.W)
+	}
+}
+
 func TestSingleBoxScene(t *testing.T) {
 	s := arrange(t, "[Hello]\n", layout.Config{})
 	if s.W != 240 || s.H != 140 || s.FontSize != 13 {
