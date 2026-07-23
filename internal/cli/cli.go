@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/bilus/dfd/internal/typeface"
 	"github.com/bilus/dfd/layout"
@@ -71,21 +73,23 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 }
 
 // run is the real pipeline: read input, parse, layout, render, write.
-// stdin/stdout modes and PNG arrive in later iterations.
+// PNG arrives in a later iteration.
 func run(o options, stdin io.Reader, stdout io.Writer) (err error) {
-	if o.input == "" || o.out == "" || o.out == "-" {
-		return fmt.Errorf("dfd: only file-to-file rendering is implemented; pass input.dfd and -o out.svg")
-	}
-	f, err := os.Open(o.input)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if cerr := f.Close(); err == nil && cerr != nil {
-			err = cerr
+	src := stdin
+	name := "<stdin>"
+	if o.input != "" {
+		f, err := os.Open(o.input)
+		if err != nil {
+			return err
 		}
-	}()
-	d, err := parse.Parse(f, o.input)
+		defer func() {
+			if cerr := f.Close(); err == nil && cerr != nil {
+				err = cerr
+			}
+		}()
+		src, name = f, o.input
+	}
+	d, err := parse.Parse(src, name)
 	if err != nil {
 		return err
 	}
@@ -105,7 +109,17 @@ func run(o options, stdin io.Reader, stdout io.Writer) (err error) {
 	if err != nil {
 		return err
 	}
-	out, err := os.Create(o.out)
+	format, outPath, err := resolveOutput(o)
+	if err != nil {
+		return err
+	}
+	if format == "png" {
+		return fmt.Errorf("dfd: png output not implemented yet")
+	}
+	if outPath == "" {
+		return render.SVG(scene, stdout)
+	}
+	out, err := os.Create(outPath)
 	if err != nil {
 		return err
 	}
@@ -116,4 +130,43 @@ func run(o options, stdin io.Reader, stdout io.Writer) (err error) {
 		return err
 	}
 	return out.Close()
+}
+
+// resolveOutput decides the output format and destination ("" = stdout)
+// from -o, --format, and the input path.
+func resolveOutput(o options) (format, path string, err error) {
+	switch o.format {
+	case "", "svg", "png":
+	default:
+		return "", "", fmt.Errorf("dfd: invalid --format %q (want svg or png)", o.format)
+	}
+	format = o.format
+	path = o.out
+	if path == "-" {
+		path = ""
+	}
+	if path != "" && format == "" {
+		switch ext := filepath.Ext(path); ext {
+		case ".svg":
+			format = "svg"
+		case ".png":
+			format = "png"
+		default:
+			return "", "", fmt.Errorf("dfd: cannot infer format from %q; use --format", ext)
+		}
+	}
+	if format == "" {
+		format = "svg"
+	}
+	if o.out == "" && o.input != "" {
+		ext := ".svg"
+		if format == "png" {
+			ext = ".png"
+		}
+		path = strings.TrimSuffix(o.input, filepath.Ext(o.input)) + ext
+	}
+	if path == "" && format == "png" {
+		return "", "", fmt.Errorf("dfd: refusing to write binary PNG to stdout; use -o")
+	}
+	return format, path, nil
 }
