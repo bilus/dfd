@@ -8,6 +8,18 @@
 
 **Tech Stack:** Go ≥1.22, `rogpeppe/go-internal/testscript` (tests only), `fogleman/gg` + `golang.org/x/image` (`gofont/goregular`, `opentype`) for PNG and text metrics.
 
+## Execution pivot (2026-07-23, after Task 5)
+
+Tasks 6–13 below are superseded by user direction: iterate **outside-in** in
+minimal feature increments instead of layer-by-layer. Each iteration: (1) add a
+failing testscript acceptance script for the smallest next feature, (2) make it
+pass through inner unit-TDD cycles, (3) commit. Ladder: one box → two boxes +
+arrow → labeled arrows → store write → store read/write → multiple stores →
+snake rows + flags → title wrapping → IO modes → error scripts → PNG →
+original example + README. Tasks 1–5 (harness, ast, parse) were completed
+before the pivot and stand. The code blocks in Tasks 6–13 remain valid
+reference material for the target implementations; only the sequencing changed.
+
 ## Global Constraints
 
 - Module `github.com/bilus/dfd`; repo root `/Users/bilus/dev/bilus/dfd`; all paths below relative to it.

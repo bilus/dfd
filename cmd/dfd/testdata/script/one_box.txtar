@@ -1,0 +1,16 @@
+dfd flow.dfd -o flow.svg
+cmp flow.svg want.svg
+
+-- flow.dfd --
+[Hello]
+-- want.svg --
+<svg viewBox="0 0 240 140" width="240" height="140" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0L10,5L0,10z" fill="#000"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="240" height="140" fill="#fff"/>
+  <rect x="40" y="40" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="120" y="75" fill="#000" text-anchor="middle">Hello</text>
+</svg>
