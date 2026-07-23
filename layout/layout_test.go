@@ -62,6 +62,64 @@ func TestFlowArrowLabel(t *testing.T) {
 	}
 }
 
+func TestStoreWriteAboveBox(t *testing.T) {
+	s := arrange(t, "[Save it]\n> something\n|Database|\n", layout.Config{})
+	var thick []layout.Line
+	var arrows []layout.Line
+	for _, it := range s.Items {
+		if l, ok := it.(layout.Line); ok {
+			if l.Thick {
+				thick = append(thick, l)
+			} else if l.Head {
+				arrows = append(arrows, l)
+			}
+		}
+	}
+	if len(thick) != 2 {
+		t.Fatalf("got %d thick lines, want 2 (store glyph)", len(thick))
+	}
+	upper := layout.Line{X1: 45, Y1: 40, X2: 195, Y2: 40, Thick: true}
+	lower := layout.Line{X1: 45, Y1: 76, X2: 195, Y2: 76, Thick: true}
+	if thick[0] != upper || thick[1] != lower {
+		t.Errorf("glyph lines = %+v %+v\nwant %+v %+v", thick[0], thick[1], upper, lower)
+	}
+	if len(arrows) != 1 {
+		t.Fatalf("got %d arrows, want 1 (put)", len(arrows))
+	}
+	put := layout.Line{X1: 120, Y1: 140, X2: 120, Y2: 79, Head: true}
+	if arrows[0] != put {
+		t.Errorf("put arrow = %+v, want %+v (box top up to store)", arrows[0], put)
+	}
+	wantName := layout.Text{X: 120, Y: 62, S: "Database", Anchor: layout.Middle}
+	wantLabel := layout.Text{X: 128, Y: 114, S: "something", Anchor: layout.Start}
+	foundName, foundLabel := false, false
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok {
+			if tx == wantName {
+				foundName = true
+			}
+			if tx == wantLabel {
+				foundLabel = true
+			}
+		}
+	}
+	if !foundName || !foundLabel {
+		t.Errorf("missing store name (%v) or arrow label (%v)", foundName, foundLabel)
+	}
+	var box layout.Rect
+	for _, it := range s.Items {
+		if r, ok := it.(layout.Rect); ok {
+			box = r
+		}
+	}
+	if box.Y != 140 {
+		t.Errorf("box y = %d, want 140 (top lane holds the store)", box.Y)
+	}
+	if s.H != 240 {
+		t.Errorf("scene h = %d, want 240", s.H)
+	}
+}
+
 func TestSingleBoxScene(t *testing.T) {
 	s := arrange(t, "[Hello]\n", layout.Config{})
 	if s.W != 240 || s.H != 140 || s.FontSize != 13 {

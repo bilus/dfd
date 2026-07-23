@@ -22,11 +22,14 @@ func SVG(s *layout.Scene, w io.Writer) error {
 		case layout.Rect:
 			p.f(`  <rect x="%d" y="%d" width="%d" height="%d" fill="#fff" stroke="#000" stroke-width="2"/>`+"\n", v.X, v.Y, v.W, v.H)
 		case layout.Line:
-			marker := ""
+			width, marker := "1.5", ""
+			if v.Thick {
+				width = "2"
+			}
 			if v.Head {
 				marker = ` marker-end="url(#ah)"`
 			}
-			p.f(`  <line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#000" stroke-width="1.5"%s/>`+"\n", v.X1, v.Y1, v.X2, v.Y2, marker)
+			p.f(`  <line x1="%d" y1="%d" x2="%d" y2="%d" stroke="#000" stroke-width="%s"%s/>`+"\n", v.X1, v.Y1, v.X2, v.Y2, width, marker)
 		case layout.Text:
 			anchor := ""
 			switch v.Anchor {

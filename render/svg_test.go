@@ -48,6 +48,24 @@ func TestSVGArrowLine(t *testing.T) {
 	}
 }
 
+func TestSVGThickLine(t *testing.T) {
+	s := &layout.Scene{W: 300, H: 100, FontSize: 13, Items: []layout.Item{
+		layout.Line{X1: 45, Y1: 40, X2: 195, Y2: 40, Thick: true},
+	}}
+	var b strings.Builder
+	if err := render.SVG(s, &b); err != nil {
+		t.Fatalf("SVG: %v", err)
+	}
+	out := b.String()
+	for _, want := range []string{
+		`  <line x1="45" y1="40" x2="195" y2="40" stroke="#000" stroke-width="2"/>` + "\n",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q\ngot:\n%s", want, out)
+		}
+	}
+}
+
 func TestSVGRectAndText(t *testing.T) {
 	s := &layout.Scene{W: 240, H: 140, FontSize: 13, Items: []layout.Item{
 		layout.Rect{X: 40, Y: 40, W: 160, H: 60},
