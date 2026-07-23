@@ -113,17 +113,20 @@ func run(o options, stdin io.Reader, stdout io.Writer) (err error) {
 	if err != nil {
 		return err
 	}
-	if format == "png" {
-		return fmt.Errorf("dfd: png output not implemented yet")
+	draw := func(w io.Writer) error {
+		if format == "png" {
+			return render.PNG(scene, o.scale, w)
+		}
+		return render.SVG(scene, w)
 	}
 	if outPath == "" {
-		return render.SVG(scene, stdout)
+		return draw(stdout)
 	}
 	out, err := os.Create(outPath)
 	if err != nil {
 		return err
 	}
-	if err := render.SVG(scene, out); err != nil {
+	if err := draw(out); err != nil {
 		if cerr := out.Close(); cerr != nil {
 			return fmt.Errorf("%v; close: %v", err, cerr)
 		}
