@@ -1,10 +1,12 @@
 # Starting workspace
 [Start container/process]
 > config
+  params
 [Start workspace agent]
-> server node
+> server node wrap
 [Connect to cluster]
 > agent node
-[Start application]
->
-[Create workspace dir]
+[Start
+ application]
+> bebbe
+[Create workspace dir wrap this but this is going to be too long blah blah lorem ipsum]

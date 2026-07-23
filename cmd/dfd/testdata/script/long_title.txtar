@@ -1,0 +1,35 @@
+dfd flow.dfd -o flow.svg
+cmp flow.svg want.svg
+
+-- flow.dfd --
+[This process has a genuinely long description that keeps going until it must wrap onto many lines]
+> ok
+[Uses supercalifragilisticexpialidociousconfiguration internally]
+> done
+[Short]
+-- want.svg --
+<svg viewBox="0 0 740 189" width="740" height="189" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0L10,5L0,10z" fill="#000"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="740" height="189" fill="#fff"/>
+  <rect x="40" y="40" width="160" height="109" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="120" y="65" fill="#000" text-anchor="middle">This process has a</text>
+  <text x="120" y="82" fill="#000" text-anchor="middle">genuinely long</text>
+  <text x="120" y="99" fill="#000" text-anchor="middle">description that keeps</text>
+  <text x="120" y="116" fill="#000" text-anchor="middle">going until it must wrap</text>
+  <text x="120" y="133" fill="#000" text-anchor="middle">onto many lines</text>
+  <rect x="290" y="40" width="160" height="109" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="370" y="74" fill="#000" text-anchor="middle">Uses</text>
+  <text x="370" y="91" fill="#000" text-anchor="middle">supercalifragilisticexpi</text>
+  <text x="370" y="108" fill="#000" text-anchor="middle">alidociousconfiguration</text>
+  <text x="370" y="125" fill="#000" text-anchor="middle">internally</text>
+  <line x1="200" y1="94" x2="287" y2="94" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="245" y="86" fill="#000" text-anchor="middle">ok</text>
+  <rect x="540" y="40" width="160" height="109" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="620" y="99" fill="#000" text-anchor="middle">Short</text>
+  <line x1="450" y1="94" x2="537" y2="94" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="495" y="86" fill="#000" text-anchor="middle">done</text>
+</svg>
