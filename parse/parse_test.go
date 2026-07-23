@@ -112,3 +112,47 @@ func TestParseMultipleStoresPerStep(t *testing.T) {
 		t.Errorf("second store = %q", d.Steps[0].Stores[1].Name)
 	}
 }
+
+func TestParseErrors(t *testing.T) {
+	cases := []struct {
+		name, src, want string
+	}{
+		{"empty document", "", "test.dfd: no processes found"},
+		{"comments only", "# hi\n\n", "test.dfd: no processes found"},
+		{"arrow before first process", "> x\n[A]\n", "test.dfd:1: arrow has no source process"},
+		{"arrow at eof", "[A]\n> x\n", "test.dfd:2: arrow has no target"},
+		{"back arrow at process", "[A]\n< x\n[B]\n", "test.dfd:2: '<' cannot point at a process; return arrows only precede a |store| line"},
+		{"double flow arrow", "[A]\n> x\n> y\n[B]\n", "test.dfd:3: multiple flow arrows between processes"},
+		{"duplicate put", "[A]\n> x\n> y\n|S|\n", "test.dfd:3: duplicate '>' arrow for datastore \"S\""},
+		{"duplicate get", "[A]\n< x\n< y\n|S|\n", "test.dfd:3: duplicate '<' arrow for datastore \"S\""},
+		{"store without arrows", "[A]\n|S|\n", "test.dfd:2: datastore \"S\" has no arrows; add > and/or < lines before it"},
+		{"store before process", "> x\n|S|\n", "test.dfd:2: datastore before any process"},
+		{"missing close bracket", "[A\n", "test.dfd:1: missing closing \"]\""},
+		{"missing close pipe", "[A]\n> x\n|S\n", "test.dfd:3: missing closing \"|\""},
+		{"trailing text", "[A] tail\n", "test.dfd:1: unexpected text after \"]\""},
+		{"empty process name", "[]\n", "test.dfd:1: empty process name"},
+		{"empty store name", "[A]\n> x\n||\n", "test.dfd:3: empty datastore name"},
+		{"unrecognized line", "[A]\nwat\n", "test.dfd:2: unrecognized line; expected [process], |store|, > or < arrow, or # comment"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, err := parse.Parse(strings.NewReader(c.src), "test.dfd")
+			if err == nil {
+				t.Fatal("want error, got nil")
+			}
+			if err.Error() != c.want {
+				t.Fatalf("error = %q\nwant    %q", err.Error(), c.want)
+			}
+		})
+	}
+}
+
+func TestParseEscapes(t *testing.T) {
+	d := mustParse(t, `[Array a\]b]`+"\n> l\n"+`|Pipe c\|d|`+"\n")
+	if got := d.Steps[0].Title; got != "Array a]b" {
+		t.Errorf("title = %q", got)
+	}
+	if got := d.Steps[0].Stores[0].Name; got != "Pipe c|d" {
+		t.Errorf("store = %q", got)
+	}
+}
