@@ -1,0 +1,54 @@
+<svg viewBox="0 0 1000 510" width="1000" height="510" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0L10,5L0,10z" fill="#000"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1000" height="510" fill="#fff"/>
+  <g stroke="#000" stroke-width="2" fill="none">
+    <rect x="40" y="140" width="160" height="60"/>
+    <rect x="290" y="140" width="160" height="60"/>
+    <rect x="540" y="140" width="160" height="60"/>
+    <rect x="790" y="140" width="160" height="60"/>
+    <rect x="790" y="290" width="160" height="60"/>
+    <rect x="540" y="290" width="160" height="60"/>
+    <rect x="290" y="290" width="160" height="60"/>
+    <line x1="545" y1="40" x2="695" y2="40"/>
+    <line x1="545" y1="76" x2="695" y2="76"/>
+    <line x1="545" y1="430" x2="695" y2="430"/>
+    <line x1="545" y1="466" x2="695" y2="466"/>
+  </g>
+  <g stroke="#000" stroke-width="1.5" fill="none">
+    <line x1="200" y1="170" x2="287" y2="170" marker-end="url(#ah)"/>
+    <line x1="450" y1="170" x2="537" y2="170" marker-end="url(#ah)"/>
+    <line x1="700" y1="170" x2="787" y2="170" marker-end="url(#ah)"/>
+    <line x1="870" y1="200" x2="870" y2="287" marker-end="url(#ah)"/>
+    <line x1="790" y1="320" x2="703" y2="320" marker-end="url(#ah)"/>
+    <line x1="540" y1="320" x2="453" y2="320" marker-end="url(#ah)"/>
+    <line x1="600" y1="140" x2="600" y2="79" marker-end="url(#ah)"/>
+    <line x1="640" y1="76" x2="640" y2="137" marker-end="url(#ah)"/>
+    <line x1="620" y1="350" x2="620" y2="427" marker-end="url(#ah)"/>
+  </g>
+  <g fill="#000" text-anchor="middle">
+    <text x="120" y="175">Start process</text>
+    <text x="370" y="175">Continue running</text>
+    <text x="620" y="167">Change something</text>
+    <text x="620" y="184">that doesn't work</text>
+    <text x="870" y="175">Blah blah</text>
+    <text x="870" y="325">Revert</text>
+    <text x="620" y="317">Store data in</text>
+    <text x="620" y="334">database</text>
+    <text x="370" y="325">Finish</text>
+    <text x="620" y="62">Somethnigs</text>
+    <text x="620" y="452">Database</text>
+    <text x="244" y="161">foo</text>
+    <text x="494" y="161">foo</text>
+    <text x="744" y="161">foo bar</text>
+    <text x="878" y="248" text-anchor="start">decision</text>
+    <text x="746" y="311">something</text>
+    <text x="496" y="311">thing2</text>
+    <text x="592" y="112" text-anchor="end">data</text>
+    <text x="648" y="112" text-anchor="start">result</text>
+    <text x="628" y="392" text-anchor="start">something</text>
+  </g>
+</svg>

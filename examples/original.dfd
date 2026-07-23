@@ -1,0 +1,19 @@
+# The original whiteboard example, in dfd syntax.
+[Start process]
+> foo
+[Continue running]
+> foo
+[Change something that doesn't work]
+    > data
+    < result
+    |Somethnigs|
+> foo bar
+[Blah blah]
+> decision
+[Revert]
+> something
+[Store data in database]
+    > something
+    |Database|
+> thing2
+[Finish]
