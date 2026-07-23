@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/image/font"
+
 	"github.com/bilus/dfd/internal/typeface"
 	"github.com/bilus/dfd/layout"
 	"github.com/bilus/dfd/parse"
@@ -356,6 +358,72 @@ func TestPerRowOneStoreHasNoFreeSide(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "no free side") {
 		t.Fatalf("err = %v, want no-free-side error", err)
 	}
+}
+
+func TestFlowLabelWrapsAtWordBoundaries(t *testing.T) {
+	s := arrange(t, "[Start container/process]\n> config, server node\n[Start workspace agent]\n", layout.Config{})
+	var lines []layout.Text
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok && tx.X == 245 {
+			lines = append(lines, tx)
+		}
+	}
+	if len(lines) != 2 {
+		t.Fatalf("got %d label lines at gap midpoint, want 2 (wrapped)", len(lines))
+	}
+	if got := lines[0].S + " " + lines[1].S; got != "config, server node" {
+		t.Errorf("wrapped lines join to %q, want original label", got)
+	}
+	face := mustFace(t)
+	for _, ln := range lines {
+		if w := layout.TextWidth(ln.S, face); w > layout.HGap-2*layout.LabelPad {
+			t.Errorf("label line %q is %dpx, exceeds %d", ln.S, w, layout.HGap-2*layout.LabelPad)
+		}
+	}
+	if lines[0].Y != 62-layout.LineH || lines[1].Y != 62 {
+		t.Errorf("label baselines = %d/%d, want %d/%d (stack grows upward)", lines[0].Y, lines[1].Y, 62-layout.LineH, 62)
+	}
+	rs := rects(s)
+	if gap := rs[1].X - (rs[0].X + 160); gap != layout.HGap {
+		t.Errorf("gap = %d, want unchanged %d (all words fit)", gap, layout.HGap)
+	}
+}
+
+func TestFlowLabelLongWordWidensGap(t *testing.T) {
+	s := arrange(t, "[A]\n> internationalization\n[B]\n", layout.Config{})
+	face := mustFace(t)
+	wantGap := layout.TextWidth("internationalization", face) + 2*layout.LabelPad
+	if wantGap <= layout.HGap {
+		t.Fatalf("test word too narrow (%d) to force widening", wantGap)
+	}
+	rs := rects(s)
+	if gap := rs[1].X - (rs[0].X + 160); gap != wantGap {
+		t.Errorf("gap = %d, want %d (widened to longest word)", gap, wantGap)
+	}
+	found := false
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok && tx.S == "internationalization" {
+			found = true
+			if tx.Y != 62 {
+				t.Errorf("single-line label y = %d, want 62", tx.Y)
+			}
+		}
+	}
+	if !found {
+		t.Error("label missing or unexpectedly wrapped")
+	}
+	if want := 2*layout.Margin + 2*160 + wantGap; s.W != want {
+		t.Errorf("scene w = %d, want %d", s.W, want)
+	}
+}
+
+func mustFace(t *testing.T) font.Face {
+	t.Helper()
+	face, err := typeface.New(13)
+	if err != nil {
+		t.Fatalf("typeface: %v", err)
+	}
+	return face
 }
 
 func TestSingleBoxScene(t *testing.T) {

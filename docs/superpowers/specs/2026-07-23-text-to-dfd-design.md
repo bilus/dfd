@@ -141,7 +141,10 @@ implemented renderer (visually reviewed), not from the hand-made file.
 ### Placement rules
 
 - Flow arrows run horizontally between adjacent boxes in a row, arrowhead at the
-  target edge; label centered above the arrow's midpoint. The snake-turn arrow
+  target edge; label centered above the arrow's midpoint. Labels wrap at word
+  boundaries to fit the column gap (8px clearance each side), stacking upward;
+  when a single word cannot fit, the column gap widens to that word instead —
+  words are never broken mid-word in labels. The snake-turn arrow
   runs vertically from the row's last box down to the next row's first box;
   label to its right, vertically centered.
 - A store with **one** arrow draws it at the box's horizontal center. A store

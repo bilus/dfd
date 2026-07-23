@@ -1,0 +1,10 @@
+# Starting workspace
+[Start container/process]
+> config
+[Start workspace agent]
+> server node
+[Connect to cluster]
+> agent node
+[Start application]
+>
+[Create workspace dir]

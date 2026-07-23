@@ -4,6 +4,7 @@ package layout
 
 import (
 	"fmt"
+	"strings"
 
 	"golang.org/x/image/font"
 
@@ -17,6 +18,7 @@ const (
 	Margin     = 40
 	Inset      = 3  // gap between an arrow tip and the edge it points at
 	LabelGap   = 8  // distance between an arrow and its label
+	LabelPad   = 8  // clearance between a flow label and the boxes beside it
 	LanePad    = 30 // clearance between a store lane and the next row
 	BoxPad     = 12 // padding between box border and title text
 	LineH      = 17 // baseline-to-baseline distance for wrapped titles
@@ -74,10 +76,23 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 		}
 	}
 
+	// Column gap: wide enough that no flow-label word overhangs a box.
+	// Conservatively sized from every label (labels that end up on turn
+	// arrows don't occupy a gap, but row assignment depends on the gap,
+	// so the bound must be computed first).
+	gapW := HGap
+	for _, st := range d.Steps {
+		for _, w := range strings.Fields(st.In) {
+			if need := TextWidth(w, c.Face) + 2*LabelPad; need > gapW {
+				gapW = need
+			}
+		}
+	}
+
 	perRow := c.PerRow
 	if perRow <= 0 {
 		perRow = 1
-		for 2*Margin+(perRow+1)*colW+perRow*HGap <= c.MaxWidth {
+		for 2*Margin+(perRow+1)*colW+perRow*gapW <= c.MaxWidth {
 			perRow++
 		}
 	}
@@ -166,7 +181,7 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 		bottom += lane
 	}
 
-	boxX := func(i int) int { return Margin + col[i]*(colW+HGap) + (colW-c.BoxW)/2 }
+	boxX := func(i int) int { return Margin + col[i]*(colW+gapW) + (colW-c.BoxW)/2 }
 
 	for i, st := range d.Steps {
 		r := i / perRow
@@ -188,7 +203,12 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 				}
 				s.Items = append(s.Items, Line{X1: x1, Y1: cy, X2: x2, Y2: cy, Head: true})
 				if st.In != "" {
-					s.Items = append(s.Items, Text{X: (fromX + x + c.BoxW) / 2, Y: cy - LabelGap, S: st.In, Anchor: Middle})
+					lines := WrapText(st.In, gapW-2*LabelPad, c.Face)
+					mid := (fromX + x + c.BoxW) / 2
+					for j, ln := range lines {
+						y := cy - LabelGap - (len(lines)-1-j)*LineH
+						s.Items = append(s.Items, Text{X: mid, Y: y, S: ln, Anchor: Middle})
+					}
 				}
 			} else { // snake turn: vertical arrow into this row's first box
 				tx := x + c.BoxW/2
@@ -208,7 +228,7 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 			}
 		}
 	}
-	s.W = 2*Margin + maxCols*colW + (maxCols-1)*HGap
+	s.W = 2*Margin + maxCols*colW + (maxCols-1)*gapW
 	s.H = rowY[nRows-1] + c.BoxH + bottom
 	return s, nil
 }
