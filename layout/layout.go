@@ -18,6 +18,8 @@ const (
 	Inset      = 3  // gap between an arrow tip and the edge it points at
 	LabelGap   = 8  // distance between an arrow and its label
 	LanePad    = 30 // clearance between a store lane and the next row
+	BoxPad     = 12 // padding between box border and title text
+	LineH      = 17 // baseline-to-baseline distance for wrapped titles
 	StoreW     = 150
 	StoreH     = 36 // distance between the two datastore glyph lines
 	StoreArrow = 64 // length of a box<->datastore arrow
@@ -52,6 +54,17 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	}
 	s := &Scene{FontSize: c.FontSize}
 	n := len(d.Steps)
+
+	// Wrap titles up front; the tallest one sets the uniform box height.
+	titles := make([][]string, n)
+	boxH := c.BoxH
+	for i, st := range d.Steps {
+		titles[i] = WrapText(st.Title, c.BoxW-2*BoxPad, c.Face)
+		if h := len(titles[i])*LineH + 2*BoxPad; h > boxH {
+			boxH = h
+		}
+	}
+	c.BoxH = boxH // c is a copy; the grown height flows to all consumers
 
 	// Uniform column width: boxes, widened by the largest store group.
 	colW := c.BoxW
@@ -159,10 +172,11 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 		r := i / perRow
 		x, by := boxX(i), rowY[r]
 		cy := by + c.BoxH/2
-		s.Items = append(s.Items,
-			Rect{X: x, Y: by, W: c.BoxW, H: c.BoxH},
-			Text{X: x + c.BoxW/2, Y: cy + 5, S: st.Title, Anchor: Middle},
-		)
+		s.Items = append(s.Items, Rect{X: x, Y: by, W: c.BoxW, H: c.BoxH})
+		first := cy + 5 - (len(titles[i])-1)*LineH/2
+		for j, ln := range titles[i] {
+			s.Items = append(s.Items, Text{X: x + c.BoxW/2, Y: first + j*LineH, S: ln, Anchor: Middle})
+		}
 		if i > 0 {
 			if pr := (i - 1) / perRow; pr == r {
 				fromX := boxX(i - 1)
