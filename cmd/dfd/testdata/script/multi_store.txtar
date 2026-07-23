@@ -1,0 +1,30 @@
+dfd flow.dfd -o flow.svg
+cmp flow.svg want.svg
+
+-- flow.dfd --
+[Fan out]
+> a
+|Cache|
+> b
+|Queue with long name|
+-- want.svg --
+<svg viewBox="0 0 402 240" width="402" height="240" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0L10,5L0,10z" fill="#000"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="402" height="240" fill="#fff"/>
+  <rect x="121" y="140" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="201" y="175" fill="#000" text-anchor="middle">Fan out</text>
+  <line x1="40" y1="40" x2="190" y2="40" stroke="#000" stroke-width="2"/>
+  <line x1="40" y1="76" x2="190" y2="76" stroke="#000" stroke-width="2"/>
+  <text x="115" y="62" fill="#000" text-anchor="middle">Cache</text>
+  <line x1="141" y1="140" x2="141" y2="79" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="149" y="113" fill="#000">a</text>
+  <line x1="210" y1="40" x2="362" y2="40" stroke="#000" stroke-width="2"/>
+  <line x1="210" y1="76" x2="362" y2="76" stroke="#000" stroke-width="2"/>
+  <text x="286" y="62" fill="#000" text-anchor="middle">Queue with long name</text>
+  <line x1="261" y1="140" x2="261" y2="79" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="269" y="113" fill="#000">b</text>
+</svg>

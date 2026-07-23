@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bilus/dfd/internal/typeface"
 	"github.com/bilus/dfd/layout"
 	"github.com/bilus/dfd/parse"
 )
@@ -16,6 +17,13 @@ func arrange(t *testing.T, src string, c layout.Config) *layout.Scene {
 	}
 	if c.BoxW == 0 {
 		c.BoxW, c.BoxH, c.MaxWidth, c.FontSize = 160, 60, 1000, 13
+	}
+	if c.Face == nil {
+		face, err := typeface.New(float64(c.FontSize))
+		if err != nil {
+			t.Fatalf("typeface: %v", err)
+		}
+		c.Face = face
 	}
 	s, err := layout.Arrange(d, c)
 	if err != nil {
@@ -174,6 +182,51 @@ func TestStoreReadOnlyCenteredArrow(t *testing.T) {
 	}
 	if !sceneTexts(s)[layout.Text{X: 128, Y: 113, S: "rows", Anchor: layout.Start}] {
 		t.Error("missing get label right of centered arrow")
+	}
+}
+
+func TestMultipleStoresSideBySideWithWidening(t *testing.T) {
+	s := arrange(t, "[Fan out]\n> a\n|Cache|\n> b\n|Queue with long name|\n", layout.Config{})
+	var thick []layout.Line
+	for _, it := range s.Items {
+		if l, ok := it.(layout.Line); ok && l.Thick {
+			thick = append(thick, l)
+		}
+	}
+	if len(thick) != 4 {
+		t.Fatalf("got %d thick lines, want 4 (two glyphs)", len(thick))
+	}
+	cacheW := thick[0].X2 - thick[0].X1
+	queueW := thick[2].X2 - thick[2].X1
+	if cacheW != layout.StoreW {
+		t.Errorf("cache glyph width = %d, want %d", cacheW, layout.StoreW)
+	}
+	if queueW <= layout.StoreW {
+		t.Errorf("queue glyph width = %d, want > %d (long name widens)", queueW, layout.StoreW)
+	}
+	if gap := thick[2].X1 - thick[0].X2; gap != layout.StoreGap {
+		t.Errorf("gap between glyphs = %d, want %d", gap, layout.StoreGap)
+	}
+	var box layout.Rect
+	for _, it := range s.Items {
+		if r, ok := it.(layout.Rect); ok {
+			box = r
+		}
+	}
+	groupL, groupR := thick[0].X1, thick[2].X2
+	if got, want := groupL+groupR, 2*(box.X+80); got != want {
+		t.Errorf("group not centered on box: group mid*2 = %d, box mid*2 = %d", got, want)
+	}
+	if groupL != layout.Margin {
+		t.Errorf("group left = %d, want %d (column starts at margin)", groupL, layout.Margin)
+	}
+	if want := 2*layout.Margin + (groupR - groupL); s.W != want {
+		t.Errorf("scene w = %d, want %d (column width = store group)", s.W, want)
+	}
+	for _, a := range headArrows(s) {
+		if a.X1 < box.X+20 || a.X1 > box.X+160-20 {
+			t.Errorf("arrow x = %d escapes box span [%d,%d]", a.X1, box.X+20, box.X+140)
+		}
 	}
 }
 

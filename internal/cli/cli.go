@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/bilus/dfd/internal/typeface"
 	"github.com/bilus/dfd/layout"
 	"github.com/bilus/dfd/parse"
 	"github.com/bilus/dfd/render"
@@ -92,10 +93,14 @@ func run(o options, stdin io.Reader, stdout io.Writer) (err error) {
 	if _, err := fmt.Sscanf(o.box, "%dx%d", &boxW, &boxH); err != nil {
 		return fmt.Errorf("dfd: invalid --box %q (want WxH)", o.box)
 	}
+	face, err := typeface.New(float64(o.fontSize))
+	if err != nil {
+		return err
+	}
 	scene, err := layout.Arrange(d, layout.Config{
 		BoxW: boxW, BoxH: boxH,
 		MaxWidth: o.maxWidth, PerRow: o.perRow,
-		FontSize: o.fontSize,
+		FontSize: o.fontSize, Face: face,
 	})
 	if err != nil {
 		return err
