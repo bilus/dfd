@@ -61,7 +61,7 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	titles := make([][]string, n)
 	boxH := c.BoxH
 	for i, st := range d.Steps {
-		titles[i] = WrapText(st.Title, c.BoxW-2*BoxPad, c.Face)
+		titles[i] = WrapSegments(st.Title, c.BoxW-2*BoxPad, c.Face)
 		if h := len(titles[i])*LineH + 2*BoxPad; h > boxH {
 			boxH = h
 		}
@@ -203,7 +203,7 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 				}
 				s.Items = append(s.Items, Line{X1: x1, Y1: cy, X2: x2, Y2: cy, Head: true})
 				if st.In != "" {
-					lines := WrapText(st.In, gapW-2*LabelPad, c.Face)
+					lines := WrapSegments(st.In, gapW-2*LabelPad, c.Face)
 					mid := (fromX + x + c.BoxW) / 2
 					for j, ln := range lines {
 						y := cy - LabelGap - (len(lines)-1-j)*LineH
@@ -215,7 +215,7 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 				fromY := rowY[pr] + c.BoxH
 				s.Items = append(s.Items, Line{X1: tx, Y1: fromY, X2: tx, Y2: by - Inset, Head: true})
 				if st.In != "" {
-					s.Items = append(s.Items, Text{X: tx + LabelGap, Y: (fromY+by)/2 + 5, S: st.In, Anchor: Start})
+					emitLabelLines(s, st.In, tx+LabelGap, (fromY+by)/2+5, Start)
 				}
 			}
 		}
@@ -231,6 +231,16 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	s.W = 2*Margin + maxCols*colW + (maxCols-1)*gapW
 	s.H = rowY[nRows-1] + c.BoxH + bottom
 	return s, nil
+}
+
+// emitLabelLines draws a label's explicit "\n" segments as a stack of
+// lines vertically centered on the baseline y.
+func emitLabelLines(s *Scene, label string, x, y int, anchor Anchor) {
+	lines := strings.Split(label, "\n")
+	first := y - (len(lines)-1)*LineH/2
+	for j, ln := range lines {
+		s.Items = append(s.Items, Text{X: x, Y: first + j*LineH, S: ln, Anchor: anchor})
+	}
 }
 
 // groupWidth is the total width of a step's side-by-side store glyphs.
@@ -293,16 +303,16 @@ func emitStore(s *Scene, l ast.StoreLink, sx, sw, bx, by, side int, c Config) {
 		s.Items = append(s.Items, Line{X1: putX, Y1: boxEdge, X2: putX, Y2: near + dir*Inset, Head: true})
 		if l.Put.Label != "" {
 			if l.Get != nil { // get's label takes the right side
-				s.Items = append(s.Items, Text{X: putX - LabelGap, Y: labelY, S: l.Put.Label, Anchor: End})
+				emitLabelLines(s, l.Put.Label, putX-LabelGap, labelY, End)
 			} else {
-				s.Items = append(s.Items, Text{X: putX + LabelGap, Y: labelY, S: l.Put.Label, Anchor: Start})
+				emitLabelLines(s, l.Put.Label, putX+LabelGap, labelY, Start)
 			}
 		}
 	}
 	if l.Get != nil {
 		s.Items = append(s.Items, Line{X1: getX, Y1: near, X2: getX, Y2: boxEdge - dir*Inset, Head: true})
 		if l.Get.Label != "" {
-			s.Items = append(s.Items, Text{X: getX + LabelGap, Y: labelY, S: l.Get.Label, Anchor: Start})
+			emitLabelLines(s, l.Get.Label, getX+LabelGap, labelY, Start)
 		}
 	}
 }

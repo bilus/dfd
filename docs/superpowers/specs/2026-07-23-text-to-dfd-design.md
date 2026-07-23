@@ -75,6 +75,23 @@ of store lines; each needs its own arrow run.
 An arrow label is everything after the `>`/`<` on that line, trimmed, taken
 verbatim — spaces and punctuation need no quoting. Labels render on one line.
 
+### Multi-line constructs
+
+- A `[process]` may span source lines: the bracket stays open until an
+  unescaped `]` ends a line, and each source line becomes one forced
+  title line (trimmed). Lines inside an open bracket are content, even
+  ones starting with `#` or blank ones. Unterminated at EOF reports
+  `missing closing "]"` at the opening line.
+- An arrow label continues onto following lines that are not blank and
+  do not start a construct (`[`, `|`, `>`, `<`, `#`); each continuation
+  line is one forced label line. A blank line or comment ends the
+  continuation; a continuation with no preceding arrow is the
+  unrecognized-line error.
+- Datastore names cannot span lines (the glyph height is fixed); the
+  missing-close error message says so.
+- Rendering: forced breaks are kept; title and flow-label segments still
+  auto-wrap individually if too wide.
+
 ### Escapes
 
 Inside process names: `\]` for a literal `]`. Inside store names: `\|` for a

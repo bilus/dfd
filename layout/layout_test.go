@@ -417,6 +417,62 @@ func TestFlowLabelLongWordWidensGap(t *testing.T) {
 	}
 }
 
+func TestExplicitTitleBreaks(t *testing.T) {
+	s := arrange(t, "[This is a box\n line 2]\n", layout.Config{})
+	texts := sceneTexts(s)
+	for _, want := range []layout.Text{
+		{X: 120, Y: 67, S: "This is a box", Anchor: layout.Middle},
+		{X: 120, Y: 84, S: "line 2", Anchor: layout.Middle},
+	} {
+		if !texts[want] {
+			t.Errorf("missing title line %+v", want)
+		}
+	}
+}
+
+func TestExplicitFlowLabelBreaks(t *testing.T) {
+	s := arrange(t, "[A]\n> line 1\n  line 2\n[B]\n", layout.Config{})
+	texts := sceneTexts(s)
+	for _, want := range []layout.Text{
+		{X: 245, Y: 45, S: "line 1", Anchor: layout.Middle},
+		{X: 245, Y: 62, S: "line 2", Anchor: layout.Middle},
+	} {
+		if !texts[want] {
+			t.Errorf("missing flow label line %+v", want)
+		}
+	}
+}
+
+func TestExplicitStoreLabelBreaks(t *testing.T) {
+	s := arrange(t, "[A]\n> aaa\n  bbb\n< ccc\n  ddd\n|S|\n", layout.Config{})
+	texts := sceneTexts(s)
+	for _, want := range []layout.Text{
+		{X: 92, Y: 105, S: "aaa", Anchor: layout.End},
+		{X: 92, Y: 122, S: "bbb", Anchor: layout.End},
+		{X: 148, Y: 105, S: "ccc", Anchor: layout.Start},
+		{X: 148, Y: 122, S: "ddd", Anchor: layout.Start},
+	} {
+		if !texts[want] {
+			t.Errorf("missing store label line %+v", want)
+		}
+	}
+}
+
+func TestExplicitTurnLabelBreaks(t *testing.T) {
+	s := arrange(t, "[One]\n[Two]\n> down\n  more\n[Three]\n", layout.Config{
+		BoxW: 160, BoxH: 60, MaxWidth: 1000, PerRow: 2, FontSize: 13,
+	})
+	texts := sceneTexts(s)
+	for _, want := range []layout.Text{
+		{X: 378, Y: 142, S: "down", Anchor: layout.Start},
+		{X: 378, Y: 159, S: "more", Anchor: layout.Start},
+	} {
+		if !texts[want] {
+			t.Errorf("missing turn label line %+v", want)
+		}
+	}
+}
+
 func mustFace(t *testing.T) font.Face {
 	t.Helper()
 	face, err := typeface.New(13)

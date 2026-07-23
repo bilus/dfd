@@ -29,6 +29,8 @@ cat flow.dfd | dfd > flow.svg
   preceding process
 - `#` — comment; blank lines and indentation are cosmetic
 - `\]`, `\|`, `\\` — literal brackets in names
+- line breaks: keep a `[bracket` open across lines, or continue an
+  arrow label on the next line — each source line renders as one line
 
 Layout is automatic: boxes snake left-to-right then right-to-left across
 rows, datastores sit above or below their process, long titles wrap.

@@ -32,39 +32,78 @@ type arrowLine struct {
 	label string
 }
 
+// openBracket is a [process] whose closing bracket has not appeared
+// yet; each source line becomes one rendered title line.
+type openBracket struct {
+	start int
+	parts []string
+}
+
 func Parse(r io.Reader, name string) (*ast.Diagram, error) {
 	errf := func(line int, format string, args ...any) error {
 		return &Error{Name: name, Line: line, Msg: fmt.Sprintf(format, args...)}
 	}
 	var steps []ast.Step
 	var pending []arrowLine
+	var open *openBracket
+	canCont := false // the previous line was an arrow or its continuation
+
+	appendStep := func(title string, n int) error {
+		if strings.TrimSpace(title) == "" {
+			return errf(n, "empty process name")
+		}
+		in, err := bindFlow(steps, pending, errf)
+		if err != nil {
+			return err
+		}
+		pending = nil
+		steps = append(steps, ast.Step{Title: title, In: in})
+		return nil
+	}
 
 	sc := bufio.NewScanner(r)
 	n := 0
 	for sc.Scan() {
 		n++
 		line := strings.TrimSpace(strings.TrimSuffix(sc.Text(), "\r"))
+		if open != nil {
+			frag, closed, err := scanFragment(line, ']', n, errf)
+			if err != nil {
+				return nil, err
+			}
+			open.parts = append(open.parts, frag)
+			if closed {
+				if err := appendStep(strings.Join(open.parts, "\n"), n); err != nil {
+					return nil, err
+				}
+				open = nil
+			}
+			continue
+		}
 		switch {
 		case line == "" || strings.HasPrefix(line, "#"):
-			continue
+			canCont = false
 		case strings.HasPrefix(line, "["):
-			title, err := unbracket(line, ']', n, errf)
+			canCont = false
+			frag, closed, err := scanFragment(line[1:], ']', n, errf)
 			if err != nil {
 				return nil, err
 			}
-			if title == "" {
-				return nil, errf(n, "empty process name")
+			if !closed {
+				open = &openBracket{start: n, parts: []string{frag}}
+				continue
 			}
-			in, err := bindFlow(steps, pending, errf)
-			if err != nil {
+			if err := appendStep(frag, n); err != nil {
 				return nil, err
 			}
-			pending = nil
-			steps = append(steps, ast.Step{Title: title, In: in})
 		case strings.HasPrefix(line, "|"):
-			nm, err := unbracket(line, '|', n, errf)
+			canCont = false
+			nm, closed, err := scanFragment(line[1:], '|', n, errf)
 			if err != nil {
 				return nil, err
+			}
+			if !closed {
+				return nil, errf(n, "missing closing %q (datastore names cannot span lines)", "|")
 			}
 			if nm == "" {
 				return nil, errf(n, "empty datastore name")
@@ -79,17 +118,25 @@ func Parse(r io.Reader, name string) (*ast.Diagram, error) {
 			pending = nil
 			steps[len(steps)-1].Stores = append(steps[len(steps)-1].Stores, link)
 		case strings.HasPrefix(line, ">") || strings.HasPrefix(line, "<"):
+			canCont = true
 			pending = append(pending, arrowLine{
 				line:  n,
 				back:  line[0] == '<',
 				label: strings.TrimSpace(line[1:]),
 			})
 		default:
+			if canCont && len(pending) > 0 {
+				pending[len(pending)-1].label += "\n" + line
+				continue
+			}
 			return nil, errf(n, "unrecognized line; expected [process], |store|, > or < arrow, or # comment")
 		}
 	}
 	if err := sc.Err(); err != nil {
 		return nil, fmt.Errorf("%s: %w", name, err)
+	}
+	if open != nil {
+		return nil, errf(open.start, "missing closing %q", "]")
 	}
 	if len(pending) > 0 {
 		if len(steps) == 0 {
@@ -155,27 +202,27 @@ func bindStore(name string, pending []arrowLine, line int, errf func(int, string
 	return link, nil
 }
 
-// unbracket parses a line of the form <open>text<close> where open is
-// line[0] and close is the matching delimiter, honoring \<close> and \\
-// escapes. The close delimiter must end the line.
-func unbracket(line string, close byte, n int, errf func(int, string, ...any) error) (string, error) {
+// scanFragment scans one line of bracketed content, resolving \<close>
+// and \\ escapes. closed reports whether the unescaped close delimiter
+// ended the line; text after the delimiter is an error.
+func scanFragment(s string, close byte, n int, errf func(int, string, ...any) error) (frag string, closed bool, err error) {
 	var b strings.Builder
-	i := 1
-	for i < len(line) {
-		c := line[i]
+	i := 0
+	for i < len(s) {
+		c := s[i]
 		switch {
-		case c == '\\' && i+1 < len(line) && (line[i+1] == close || line[i+1] == '\\'):
-			b.WriteByte(line[i+1])
+		case c == '\\' && i+1 < len(s) && (s[i+1] == close || s[i+1] == '\\'):
+			b.WriteByte(s[i+1])
 			i += 2
 		case c == close:
-			if i != len(line)-1 {
-				return "", errf(n, "unexpected text after %q", string(close))
+			if i != len(s)-1 {
+				return "", false, errf(n, "unexpected text after %q", string(close))
 			}
-			return strings.TrimSpace(b.String()), nil
+			return strings.TrimSpace(b.String()), true, nil
 		default:
 			b.WriteByte(c)
 			i++
 		}
 	}
-	return "", errf(n, "missing closing %q", string(close))
+	return strings.TrimSpace(b.String()), false, nil
 }

@@ -128,11 +128,66 @@ func TestParseErrors(t *testing.T) {
 		{"store without arrows", "[A]\n|S|\n", "test.dfd:2: datastore \"S\" has no arrows; add > and/or < lines before it"},
 		{"store before process", "> x\n|S|\n", "test.dfd:2: datastore before any process"},
 		{"missing close bracket", "[A\n", "test.dfd:1: missing closing \"]\""},
-		{"missing close pipe", "[A]\n> x\n|S\n", "test.dfd:3: missing closing \"|\""},
+		{"missing close pipe", "[A]\n> x\n|S\n", "test.dfd:3: missing closing \"|\" (datastore names cannot span lines)"},
 		{"trailing text", "[A] tail\n", "test.dfd:1: unexpected text after \"]\""},
 		{"empty process name", "[]\n", "test.dfd:1: empty process name"},
 		{"empty store name", "[A]\n> x\n||\n", "test.dfd:3: empty datastore name"},
 		{"unrecognized line", "[A]\nwat\n", "test.dfd:2: unrecognized line; expected [process], |store|, > or < arrow, or # comment"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, err := parse.Parse(strings.NewReader(c.src), "test.dfd")
+			if err == nil {
+				t.Fatal("want error, got nil")
+			}
+			if err.Error() != c.want {
+				t.Fatalf("error = %q\nwant    %q", err.Error(), c.want)
+			}
+		})
+	}
+}
+
+func TestParseMultiLineTitle(t *testing.T) {
+	d := mustParse(t, "[This is a box\n line 2]\n[Another box]\n")
+	if got := d.Steps[0].Title; got != "This is a box\nline 2" {
+		t.Errorf("title = %q, want lines joined with \\n and trimmed", got)
+	}
+}
+
+func TestParseArrowLabelContinuation(t *testing.T) {
+	d := mustParse(t, "[A]\n> line 1\n  line 2\n[B]\n")
+	if got := d.Steps[1].In; got != "line 1\nline 2" {
+		t.Errorf("flow label = %q, want %q", got, "line 1\nline 2")
+	}
+}
+
+func TestParseStoreArrowLabelContinuations(t *testing.T) {
+	d := mustParse(t, "[A]\n> aaa\n  bbb\n< ccc\n  ddd\n|S|\n")
+	l := d.Steps[0].Stores[0]
+	if l.Put == nil || l.Put.Label != "aaa\nbbb" {
+		t.Errorf("put label = %+v, want aaa\\nbbb", l.Put)
+	}
+	if l.Get == nil || l.Get.Label != "ccc\nddd" {
+		t.Errorf("get label = %+v, want ccc\\nddd", l.Get)
+	}
+}
+
+func TestParseCommentInsideOpenBracketIsContent(t *testing.T) {
+	d := mustParse(t, "[a\n# not a comment\nb]\n")
+	if got := d.Steps[0].Title; got != "a\n# not a comment\nb" {
+		t.Errorf("title = %q, want the hash line kept as content", got)
+	}
+}
+
+func TestParseMultiLineErrors(t *testing.T) {
+	cases := []struct {
+		name, src, want string
+	}{
+		{"unterminated at eof", "[A\nstill open\n", "test.dfd:1: missing closing \"]\""},
+		{"orphan continuation", "[A]\nwat\n", "test.dfd:2: unrecognized line; expected [process], |store|, > or < arrow, or # comment"},
+		{"blank ends continuation", "[A]\n> x\n\ncont\n[B]\n", "test.dfd:4: unrecognized line; expected [process], |store|, > or < arrow, or # comment"},
+		{"trailing text on closing line", "[A\nb] tail\n", "test.dfd:2: unexpected text after \"]\""},
+		{"store name spans lines", "[A]\n> x\n|Store\nname|\n", "test.dfd:3: missing closing \"|\" (datastore names cannot span lines)"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
