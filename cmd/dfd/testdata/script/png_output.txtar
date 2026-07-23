@@ -1,0 +1,13 @@
+dfd flow.dfd -o flow.png
+exists flow.png
+
+dfd --scale 1 flow.dfd -o small.png
+exists small.png
+
+dfd --format png flow.dfd -o alt.out
+exists alt.out
+
+-- flow.dfd --
+[A]
+> x
+[B]

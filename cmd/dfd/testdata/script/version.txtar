@@ -1,0 +1,5 @@
+dfd --version
+stdout '^dfd 0\.1\.0$'
+
+! dfd --definitely-not-a-flag
+stderr 'flag provided but not defined'

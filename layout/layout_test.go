@@ -1,0 +1,377 @@
+package layout_test
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/bilus/dfd/internal/typeface"
+	"github.com/bilus/dfd/layout"
+	"github.com/bilus/dfd/parse"
+)
+
+func arrange(t *testing.T, src string, c layout.Config) *layout.Scene {
+	t.Helper()
+	d, err := parse.Parse(strings.NewReader(src), "test.dfd")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if c.BoxW == 0 {
+		c.BoxW, c.BoxH, c.MaxWidth, c.FontSize = 160, 60, 1000, 13
+	}
+	if c.Face == nil {
+		face, err := typeface.New(float64(c.FontSize))
+		if err != nil {
+			t.Fatalf("typeface: %v", err)
+		}
+		c.Face = face
+	}
+	s, err := layout.Arrange(d, c)
+	if err != nil {
+		t.Fatalf("Arrange: %v", err)
+	}
+	return s
+}
+
+func TestTwoBoxesConnectedByArrow(t *testing.T) {
+	s := arrange(t, "[First]\n[Second]\n", layout.Config{})
+	var lines []layout.Line
+	for _, it := range s.Items {
+		if l, ok := it.(layout.Line); ok {
+			lines = append(lines, l)
+		}
+	}
+	if len(lines) != 1 {
+		t.Fatalf("got %d lines, want 1 arrow", len(lines))
+	}
+	want := layout.Line{X1: 200, Y1: 70, X2: 287, Y2: 70, Head: true}
+	if lines[0] != want {
+		t.Errorf("arrow = %+v, want %+v", lines[0], want)
+	}
+	if s.W != 2*layout.Margin+2*160+layout.HGap {
+		t.Errorf("scene w = %d", s.W)
+	}
+}
+
+func TestFlowArrowLabel(t *testing.T) {
+	s := arrange(t, "[A]\n> go\n[B]\n", layout.Config{})
+	var got *layout.Text
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok && tx.S == "go" {
+			got = &tx
+			break
+		}
+	}
+	if got == nil {
+		t.Fatal("flow label not in scene")
+	}
+	want := layout.Text{X: 245, Y: 62, S: "go", Anchor: layout.Middle}
+	if *got != want {
+		t.Errorf("label = %+v, want %+v (gap midpoint, LabelGap above)", *got, want)
+	}
+}
+
+func TestStoreWriteAboveBox(t *testing.T) {
+	s := arrange(t, "[Save it]\n> something\n|Database|\n", layout.Config{})
+	var thick []layout.Line
+	var arrows []layout.Line
+	for _, it := range s.Items {
+		if l, ok := it.(layout.Line); ok {
+			if l.Thick {
+				thick = append(thick, l)
+			} else if l.Head {
+				arrows = append(arrows, l)
+			}
+		}
+	}
+	if len(thick) != 2 {
+		t.Fatalf("got %d thick lines, want 2 (store glyph)", len(thick))
+	}
+	upper := layout.Line{X1: 45, Y1: 40, X2: 195, Y2: 40, Thick: true}
+	lower := layout.Line{X1: 45, Y1: 76, X2: 195, Y2: 76, Thick: true}
+	if thick[0] != upper || thick[1] != lower {
+		t.Errorf("glyph lines = %+v %+v\nwant %+v %+v", thick[0], thick[1], upper, lower)
+	}
+	if len(arrows) != 1 {
+		t.Fatalf("got %d arrows, want 1 (put)", len(arrows))
+	}
+	put := layout.Line{X1: 120, Y1: 140, X2: 120, Y2: 79, Head: true}
+	if arrows[0] != put {
+		t.Errorf("put arrow = %+v, want %+v (box top up to store)", arrows[0], put)
+	}
+	wantName := layout.Text{X: 120, Y: 62, S: "Database", Anchor: layout.Middle}
+	wantLabel := layout.Text{X: 128, Y: 113, S: "something", Anchor: layout.Start}
+	foundName, foundLabel := false, false
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok {
+			if tx == wantName {
+				foundName = true
+			}
+			if tx == wantLabel {
+				foundLabel = true
+			}
+		}
+	}
+	if !foundName || !foundLabel {
+		t.Errorf("missing store name (%v) or arrow label (%v)", foundName, foundLabel)
+	}
+	var box layout.Rect
+	for _, it := range s.Items {
+		if r, ok := it.(layout.Rect); ok {
+			box = r
+		}
+	}
+	if box.Y != 140 {
+		t.Errorf("box y = %d, want 140 (top lane holds the store)", box.Y)
+	}
+	if s.H != 240 {
+		t.Errorf("scene h = %d, want 240", s.H)
+	}
+}
+
+func sceneTexts(s *layout.Scene) map[layout.Text]bool {
+	out := map[layout.Text]bool{}
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok {
+			out[tx] = true
+		}
+	}
+	return out
+}
+
+func headArrows(s *layout.Scene) []layout.Line {
+	var out []layout.Line
+	for _, it := range s.Items {
+		if l, ok := it.(layout.Line); ok && l.Head && !l.Thick {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+func TestStoreReadWriteArrowPair(t *testing.T) {
+	s := arrange(t, "[Store in database]\n> input\n< record id\n|Somethings|\n", layout.Config{})
+	arrows := headArrows(s)
+	if len(arrows) != 2 {
+		t.Fatalf("got %d arrows, want put + get", len(arrows))
+	}
+	put := layout.Line{X1: 100, Y1: 140, X2: 100, Y2: 79, Head: true}
+	get := layout.Line{X1: 140, Y1: 76, X2: 140, Y2: 137, Head: true}
+	if arrows[0] != put || arrows[1] != get {
+		t.Errorf("arrows = %+v %+v\nwant put %+v get %+v", arrows[0], arrows[1], put, get)
+	}
+	texts := sceneTexts(s)
+	for _, want := range []layout.Text{
+		{X: 92, Y: 113, S: "input", Anchor: layout.End},
+		{X: 148, Y: 113, S: "record id", Anchor: layout.Start},
+	} {
+		if !texts[want] {
+			t.Errorf("missing label %+v", want)
+		}
+	}
+}
+
+func TestStoreReadOnlyCenteredArrow(t *testing.T) {
+	s := arrange(t, "[Load it]\n< rows\n|Database|\n", layout.Config{})
+	arrows := headArrows(s)
+	if len(arrows) != 1 {
+		t.Fatalf("got %d arrows, want 1 (get)", len(arrows))
+	}
+	get := layout.Line{X1: 120, Y1: 76, X2: 120, Y2: 137, Head: true}
+	if arrows[0] != get {
+		t.Errorf("get arrow = %+v, want %+v (centered, store down to box)", arrows[0], get)
+	}
+	if !sceneTexts(s)[layout.Text{X: 128, Y: 113, S: "rows", Anchor: layout.Start}] {
+		t.Error("missing get label right of centered arrow")
+	}
+}
+
+func TestMultipleStoresSideBySideWithWidening(t *testing.T) {
+	s := arrange(t, "[Fan out]\n> a\n|Cache|\n> b\n|Queue with long name|\n", layout.Config{})
+	var thick []layout.Line
+	for _, it := range s.Items {
+		if l, ok := it.(layout.Line); ok && l.Thick {
+			thick = append(thick, l)
+		}
+	}
+	if len(thick) != 4 {
+		t.Fatalf("got %d thick lines, want 4 (two glyphs)", len(thick))
+	}
+	cacheW := thick[0].X2 - thick[0].X1
+	queueW := thick[2].X2 - thick[2].X1
+	if cacheW != layout.StoreW {
+		t.Errorf("cache glyph width = %d, want %d", cacheW, layout.StoreW)
+	}
+	if queueW <= layout.StoreW {
+		t.Errorf("queue glyph width = %d, want > %d (long name widens)", queueW, layout.StoreW)
+	}
+	if gap := thick[2].X1 - thick[0].X2; gap != layout.StoreGap {
+		t.Errorf("gap between glyphs = %d, want %d", gap, layout.StoreGap)
+	}
+	var box layout.Rect
+	for _, it := range s.Items {
+		if r, ok := it.(layout.Rect); ok {
+			box = r
+		}
+	}
+	groupL, groupR := thick[0].X1, thick[2].X2
+	if got, want := groupL+groupR, 2*(box.X+80); got != want {
+		t.Errorf("group not centered on box: group mid*2 = %d, box mid*2 = %d", got, want)
+	}
+	if groupL != layout.Margin {
+		t.Errorf("group left = %d, want %d (column starts at margin)", groupL, layout.Margin)
+	}
+	if want := 2*layout.Margin + (groupR - groupL); s.W != want {
+		t.Errorf("scene w = %d, want %d (column width = store group)", s.W, want)
+	}
+	for _, a := range headArrows(s) {
+		if a.X1 < box.X+20 || a.X1 > box.X+160-20 {
+			t.Errorf("arrow x = %d escapes box span [%d,%d]", a.X1, box.X+20, box.X+140)
+		}
+	}
+}
+
+func rects(s *layout.Scene) []layout.Rect {
+	var out []layout.Rect
+	for _, it := range s.Items {
+		if r, ok := it.(layout.Rect); ok {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+func TestSnakeRowsAndTurns(t *testing.T) {
+	s := arrange(t, "[One]\n[Two]\n[Three]\n[Four]\n[Five]\n", layout.Config{
+		BoxW: 160, BoxH: 60, MaxWidth: 700, FontSize: 13,
+	})
+	rs := rects(s)
+	if len(rs) != 5 {
+		t.Fatalf("got %d rects, want 5", len(rs))
+	}
+	for i, wantY := range []int{40, 40, 190, 190, 340} {
+		if rs[i].Y != wantY {
+			t.Errorf("box %d y = %d, want %d", i, rs[i].Y, wantY)
+		}
+	}
+	for i, wantX := range []int{40, 290, 290, 40, 40} {
+		if rs[i].X != wantX {
+			t.Errorf("box %d x = %d, want %d (snake mirror)", i, rs[i].X, wantX)
+		}
+	}
+	var turns, horiz []layout.Line
+	for _, a := range headArrows(s) {
+		if a.X1 == a.X2 {
+			turns = append(turns, a)
+		} else {
+			horiz = append(horiz, a)
+		}
+	}
+	if len(turns) != 2 || len(horiz) != 2 {
+		t.Fatalf("got %d turns / %d horizontal, want 2/2", len(turns), len(horiz))
+	}
+	if want := (layout.Line{X1: 370, Y1: 100, X2: 370, Y2: 187, Head: true}); turns[0] != want {
+		t.Errorf("first turn = %+v, want %+v", turns[0], want)
+	}
+	if want := (layout.Line{X1: 120, Y1: 250, X2: 120, Y2: 337, Head: true}); turns[1] != want {
+		t.Errorf("second turn = %+v, want %+v", turns[1], want)
+	}
+	if want := (layout.Line{X1: 290, Y1: 220, X2: 203, Y2: 220, Head: true}); horiz[1] != want {
+		t.Errorf("row-1 arrow = %+v, want %+v (right to left)", horiz[1], want)
+	}
+	if s.W != 490 || s.H != 440 {
+		t.Errorf("scene = %dx%d, want 490x440", s.W, s.H)
+	}
+}
+
+func TestTurnArrowLabel(t *testing.T) {
+	s := arrange(t, "[One]\n[Two]\n> down\n[Three]\n", layout.Config{
+		BoxW: 160, BoxH: 60, MaxWidth: 1000, PerRow: 2, FontSize: 13,
+	})
+	if !sceneTexts(s)[layout.Text{X: 378, Y: 150, S: "down", Anchor: layout.Start}] {
+		t.Error("turn label not right of the vertical arrow")
+	}
+}
+
+func TestStoreSidesAcrossRows(t *testing.T) {
+	src := `[A]
+[B]
+> x
+|SB|
+[C]
+> y
+|SC|
+[D]
+[E]
+> z
+|SE|
+[F]
+`
+	s := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, MaxWidth: 1000, PerRow: 2, FontSize: 13})
+	rs := rects(s)
+	if len(rs) != 6 {
+		t.Fatalf("got %d rects, want 6", len(rs))
+	}
+	for i, wantY := range []int{140, 140, 290, 290, 480, 480} {
+		if rs[i].Y != wantY {
+			t.Errorf("box %d y = %d, want %d (lanes grow gaps)", i, rs[i].Y, wantY)
+		}
+	}
+	var thick []layout.Line
+	for _, it := range s.Items {
+		if l, ok := it.(layout.Line); ok && l.Thick {
+			thick = append(thick, l)
+		}
+	}
+	if len(thick) != 6 {
+		t.Fatalf("got %d thick lines, want 6 (three glyphs)", len(thick))
+	}
+	// SB above row 0: lines at 40 and 76 over box B (col 1).
+	if thick[0].Y1 != 40 || thick[1].Y1 != 76 {
+		t.Errorf("SB glyph lines at %d/%d, want 40/76 (above row 0)", thick[0].Y1, thick[1].Y1)
+	}
+	// SC below row 1 (C is row-first, its top is taken by the turn arrow):
+	// upper line at boxBottom+StoreArrow = 350+64 = 414.
+	if thick[2].Y1 != 414 || thick[3].Y1 != 450 {
+		t.Errorf("SC glyph lines at %d/%d, want 414/450 (flipped below)", thick[2].Y1, thick[3].Y1)
+	}
+	// SE below row 2 (last row): upper line at 480+60+64 = 604.
+	if thick[4].Y1 != 604 || thick[5].Y1 != 640 {
+		t.Errorf("SE glyph lines at %d/%d, want 604/640 (below last row)", thick[4].Y1, thick[5].Y1)
+	}
+	if s.H != 680 {
+		t.Errorf("scene h = %d, want 680 (bottom lane)", s.H)
+	}
+}
+
+func TestPerRowOneStoreHasNoFreeSide(t *testing.T) {
+	d, err := parse.Parse(strings.NewReader("[A]\n[B]\n> x\n|S|\n[C]\n"), "test.dfd")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	face, err := typeface.New(13)
+	if err != nil {
+		t.Fatalf("typeface: %v", err)
+	}
+	_, err = layout.Arrange(d, layout.Config{BoxW: 160, BoxH: 60, PerRow: 1, FontSize: 13, Face: face})
+	if err == nil || !strings.Contains(err.Error(), "no free side") {
+		t.Fatalf("err = %v, want no-free-side error", err)
+	}
+}
+
+func TestSingleBoxScene(t *testing.T) {
+	s := arrange(t, "[Hello]\n", layout.Config{})
+	if s.W != 240 || s.H != 140 || s.FontSize != 13 {
+		t.Errorf("scene = %dx%d font %d, want 240x140 font 13", s.W, s.H, s.FontSize)
+	}
+	if len(s.Items) != 2 {
+		t.Fatalf("got %d items, want rect + text", len(s.Items))
+	}
+	r, ok := s.Items[0].(layout.Rect)
+	if !ok || r != (layout.Rect{X: 40, Y: 40, W: 160, H: 60}) {
+		t.Errorf("rect = %+v, want {40 40 160 60}", s.Items[0])
+	}
+	tx, ok := s.Items[1].(layout.Text)
+	if !ok || tx != (layout.Text{X: 120, Y: 75, S: "Hello", Anchor: layout.Middle}) {
+		t.Errorf("text = %+v, want centered baseline at (120,75)", s.Items[1])
+	}
+}

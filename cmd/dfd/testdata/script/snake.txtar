@@ -1,0 +1,40 @@
+dfd --max-width 700 flow.dfd -o flow.svg
+cmp flow.svg want.svg
+
+-- flow.dfd --
+[One]
+> a
+[Two]
+> b
+[Three]
+> down
+[Four]
+> c
+[Five]
+-- want.svg --
+<svg viewBox="0 0 490 440" width="490" height="440" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0L10,5L0,10z" fill="#000"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="490" height="440" fill="#fff"/>
+  <rect x="40" y="40" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="120" y="75" fill="#000" text-anchor="middle">One</text>
+  <rect x="290" y="40" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="370" y="75" fill="#000" text-anchor="middle">Two</text>
+  <line x1="200" y1="70" x2="287" y2="70" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="245" y="62" fill="#000" text-anchor="middle">a</text>
+  <rect x="290" y="190" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="370" y="225" fill="#000" text-anchor="middle">Three</text>
+  <line x1="370" y1="100" x2="370" y2="187" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="378" y="150" fill="#000">b</text>
+  <rect x="40" y="190" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="120" y="225" fill="#000" text-anchor="middle">Four</text>
+  <line x1="290" y1="220" x2="203" y2="220" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="245" y="212" fill="#000" text-anchor="middle">down</text>
+  <rect x="40" y="340" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="120" y="375" fill="#000" text-anchor="middle">Five</text>
+  <line x1="120" y1="250" x2="120" y2="337" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="128" y="300" fill="#000">c</text>
+</svg>

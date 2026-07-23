@@ -1,3 +1,27 @@
+dfd --max-width 1100 flow.dfd -o flow.svg
+cmp flow.svg want.svg
+
+-- flow.dfd --
+# The original whiteboard example, in dfd syntax.
+[Start process]
+> foo
+[Continue running]
+> foo
+[Change something that doesn't work]
+    > data
+    < result
+    |Somethnigs|
+> foo bar
+[Blah blah]
+> decision
+[Revert]
+> something
+[Store data in database]
+    > something
+    |Database|
+> thing2
+[Finish]
+-- want.svg --
 <svg viewBox="0 0 990 490" width="990" height="490" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="13">
   <defs>
     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
