@@ -1,0 +1,41 @@
+! dfd empty.dfd
+stderr 'empty\.dfd: no processes found'
+
+! dfd dangling.dfd
+stderr 'dangling\.dfd:2: arrow has no target'
+
+! dfd back.dfd
+stderr 'back\.dfd:2: .<. cannot point at a process'
+
+! dfd nostore.dfd
+stderr 'nostore\.dfd:2: datastore "S" has no arrows'
+
+! dfd unrecognized.dfd
+stderr 'unrecognized\.dfd:1: unrecognized line'
+
+! dfd missing.dfd
+stderr 'no such file or directory'
+
+! dfd nofreeside.dfd --per-row 1
+stderr 'step "B" has no free side for its datastores'
+
+-- empty.dfd --
+# only a comment
+-- dangling.dfd --
+[A]
+> x
+-- back.dfd --
+[A]
+< x
+[B]
+-- nostore.dfd --
+[A]
+|S|
+-- unrecognized.dfd --
+wat
+-- nofreeside.dfd --
+[A]
+[B]
+> x
+|S|
+[C]
