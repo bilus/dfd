@@ -67,10 +67,26 @@ func emitStore(s *Scene, l ast.StoreLink, bx, by int, c Config) {
 		Line{X1: sx, Y1: line2, X2: sx + StoreW, Y2: line2, Thick: true},
 		Text{X: cx, Y: line1 + (StoreH+c.FontSize)/2 - 2, S: l.Name, Anchor: Middle},
 	)
+	// One arrow sits at the box center; a put/get pair sits at ±20.
+	putX, getX := cx, cx
+	if l.Put != nil && l.Get != nil {
+		putX, getX = cx-20, cx+20
+	}
+	labelY := (by+line2)/2 + 5
 	if l.Put != nil {
-		s.Items = append(s.Items, Line{X1: cx, Y1: by, X2: cx, Y2: line2 + Inset, Head: true})
+		s.Items = append(s.Items, Line{X1: putX, Y1: by, X2: putX, Y2: line2 + Inset, Head: true})
 		if l.Put.Label != "" {
-			s.Items = append(s.Items, Text{X: cx + LabelGap, Y: (by+line2+Inset)/2 + 5, S: l.Put.Label, Anchor: Start})
+			if l.Get != nil { // get's label takes the right side
+				s.Items = append(s.Items, Text{X: putX - LabelGap, Y: labelY, S: l.Put.Label, Anchor: End})
+			} else {
+				s.Items = append(s.Items, Text{X: putX + LabelGap, Y: labelY, S: l.Put.Label, Anchor: Start})
+			}
+		}
+	}
+	if l.Get != nil {
+		s.Items = append(s.Items, Line{X1: getX, Y1: line2, X2: getX, Y2: by - Inset, Head: true})
+		if l.Get.Label != "" {
+			s.Items = append(s.Items, Text{X: getX + LabelGap, Y: labelY, S: l.Get.Label, Anchor: Start})
 		}
 	}
 }

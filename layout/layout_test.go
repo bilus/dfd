@@ -91,7 +91,7 @@ func TestStoreWriteAboveBox(t *testing.T) {
 		t.Errorf("put arrow = %+v, want %+v (box top up to store)", arrows[0], put)
 	}
 	wantName := layout.Text{X: 120, Y: 62, S: "Database", Anchor: layout.Middle}
-	wantLabel := layout.Text{X: 128, Y: 114, S: "something", Anchor: layout.Start}
+	wantLabel := layout.Text{X: 128, Y: 113, S: "something", Anchor: layout.Start}
 	foundName, foundLabel := false, false
 	for _, it := range s.Items {
 		if tx, ok := it.(layout.Text); ok {
@@ -117,6 +117,63 @@ func TestStoreWriteAboveBox(t *testing.T) {
 	}
 	if s.H != 240 {
 		t.Errorf("scene h = %d, want 240", s.H)
+	}
+}
+
+func sceneTexts(s *layout.Scene) map[layout.Text]bool {
+	out := map[layout.Text]bool{}
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok {
+			out[tx] = true
+		}
+	}
+	return out
+}
+
+func headArrows(s *layout.Scene) []layout.Line {
+	var out []layout.Line
+	for _, it := range s.Items {
+		if l, ok := it.(layout.Line); ok && l.Head && !l.Thick {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+func TestStoreReadWriteArrowPair(t *testing.T) {
+	s := arrange(t, "[Store in database]\n> input\n< record id\n|Somethings|\n", layout.Config{})
+	arrows := headArrows(s)
+	if len(arrows) != 2 {
+		t.Fatalf("got %d arrows, want put + get", len(arrows))
+	}
+	put := layout.Line{X1: 100, Y1: 140, X2: 100, Y2: 79, Head: true}
+	get := layout.Line{X1: 140, Y1: 76, X2: 140, Y2: 137, Head: true}
+	if arrows[0] != put || arrows[1] != get {
+		t.Errorf("arrows = %+v %+v\nwant put %+v get %+v", arrows[0], arrows[1], put, get)
+	}
+	texts := sceneTexts(s)
+	for _, want := range []layout.Text{
+		{X: 92, Y: 113, S: "input", Anchor: layout.End},
+		{X: 148, Y: 113, S: "record id", Anchor: layout.Start},
+	} {
+		if !texts[want] {
+			t.Errorf("missing label %+v", want)
+		}
+	}
+}
+
+func TestStoreReadOnlyCenteredArrow(t *testing.T) {
+	s := arrange(t, "[Load it]\n< rows\n|Database|\n", layout.Config{})
+	arrows := headArrows(s)
+	if len(arrows) != 1 {
+		t.Fatalf("got %d arrows, want 1 (get)", len(arrows))
+	}
+	get := layout.Line{X1: 120, Y1: 76, X2: 120, Y2: 137, Head: true}
+	if arrows[0] != get {
+		t.Errorf("get arrow = %+v, want %+v (centered, store down to box)", arrows[0], get)
+	}
+	if !sceneTexts(s)[layout.Text{X: 128, Y: 113, S: "rows", Anchor: layout.Start}] {
+		t.Error("missing get label right of centered arrow")
 	}
 }
 
