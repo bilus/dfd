@@ -44,6 +44,24 @@ func TestTwoBoxesConnectedByArrow(t *testing.T) {
 	}
 }
 
+func TestFlowArrowLabel(t *testing.T) {
+	s := arrange(t, "[A]\n> go\n[B]\n", layout.Config{})
+	var got *layout.Text
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok && tx.S == "go" {
+			got = &tx
+			break
+		}
+	}
+	if got == nil {
+		t.Fatal("flow label not in scene")
+	}
+	want := layout.Text{X: 245, Y: 62, S: "go", Anchor: layout.Middle}
+	if *got != want {
+		t.Errorf("label = %+v, want %+v (gap midpoint, LabelGap above)", *got, want)
+	}
+}
+
 func TestSingleBoxScene(t *testing.T) {
 	s := arrange(t, "[Hello]\n", layout.Config{})
 	if s.W != 240 || s.H != 140 || s.FontSize != 13 {

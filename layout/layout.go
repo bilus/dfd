@@ -6,9 +6,10 @@ import "github.com/bilus/dfd/ast"
 
 // Geometry constants; normative values from the design spec.
 const (
-	HGap   = 90
-	Margin = 40
-	Inset  = 3 // gap between an arrow tip and the edge it points at
+	HGap     = 90
+	Margin   = 40
+	Inset    = 3 // gap between an arrow tip and the edge it points at
+	LabelGap = 8 // distance between an arrow and its label
 )
 
 type Config struct {
@@ -31,6 +32,9 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 		)
 		if i > 0 {
 			s.Items = append(s.Items, Line{X1: x - HGap, Y1: cy, X2: x - Inset, Y2: cy, Head: true})
+			if st.In != "" {
+				s.Items = append(s.Items, Text{X: x - HGap/2, Y: cy - LabelGap, S: st.In, Anchor: Middle})
+			}
 		}
 	}
 	s.W = 2*Margin + n*c.BoxW + (n-1)*HGap
