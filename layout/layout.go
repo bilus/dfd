@@ -13,9 +13,11 @@ import (
 // Geometry constants; normative values from the design spec.
 const (
 	HGap       = 90
+	VGap       = 90 // base vertical gap between rows
 	Margin     = 40
-	Inset      = 3 // gap between an arrow tip and the edge it points at
-	LabelGap   = 8 // distance between an arrow and its label
+	Inset      = 3  // gap between an arrow tip and the edge it points at
+	LabelGap   = 8  // distance between an arrow and its label
+	LanePad    = 30 // clearance between a store lane and the next row
 	StoreW     = 150
 	StoreH     = 36 // distance between the two datastore glyph lines
 	StoreArrow = 64 // length of a box<->datastore arrow
@@ -59,39 +61,141 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 		}
 	}
 
-	rowY := Margin
-	for _, st := range d.Steps {
-		if len(st.Stores) > 0 {
-			rowY = Margin + StoreArrow + StoreH // top lane holds the stores
-			break
+	perRow := c.PerRow
+	if perRow <= 0 {
+		perRow = 1
+		for 2*Margin+(perRow+1)*colW+perRow*HGap <= c.MaxWidth {
+			perRow++
 		}
 	}
-	cy := rowY + c.BoxH/2
+	nRows := (n + perRow - 1) / perRow
+
+	// Columns: odd rows mirror so each row starts under the previous
+	// row's last box.
+	col := make([]int, n)
+	maxCols := 0
+	for i := range d.Steps {
+		r, k := i/perRow, i%perRow
+		if r%2 == 0 {
+			col[i] = k
+		} else {
+			col[i] = perRow - 1 - k
+		}
+		if col[i]+1 > maxCols {
+			maxCols = col[i] + 1
+		}
+	}
+
+	// Store sides: +1 above, -1 below, 0 no stores. Preferred side is
+	// above, except the last row of a multi-row diagram (below); flip
+	// when a turn arrow occupies the preferred anchor.
+	side := make([]int, n)
 	for i, st := range d.Steps {
-		colX := Margin + i*(colW+HGap)
-		x := colX + (colW-c.BoxW)/2
+		if len(st.Stores) == 0 {
+			continue
+		}
+		r := i / perRow
+		pref := 1
+		if r == nRows-1 && nRows > 1 {
+			pref = -1
+		}
+		topBusy := r > 0 && i == r*perRow
+		bottomBusy := i == (r+1)*perRow-1 && i != n-1
+		if pref == 1 && topBusy {
+			pref = -1
+		} else if pref == -1 && bottomBusy {
+			pref = 1
+		}
+		if (pref == 1 && topBusy) || (pref == -1 && bottomBusy) {
+			return nil, fmt.Errorf("layout: step %q has no free side for its datastores; increase --max-width or --per-row", st.Title)
+		}
+		side[i] = pref
+	}
+
+	// Row positions: gaps grow to hold store lanes.
+	lane := StoreArrow + StoreH
+	above := make([]bool, nRows)
+	below := make([]bool, nRows)
+	for i := range d.Steps {
+		r := i / perRow
+		switch side[i] {
+		case 1:
+			above[r] = true
+		case -1:
+			below[r] = true
+		}
+	}
+	rowY := make([]int, nRows)
+	y := Margin
+	if above[0] {
+		y += lane
+	}
+	for r := 0; r < nRows; r++ {
+		rowY[r] = y
+		y += c.BoxH
+		if r < nRows-1 {
+			need := 0
+			if below[r] {
+				need += lane
+			}
+			if above[r+1] {
+				need += lane
+			}
+			gap := VGap
+			if need > 0 && need+LanePad > gap {
+				gap = need + LanePad
+			}
+			y += gap
+		}
+	}
+	bottom := Margin
+	if below[nRows-1] {
+		bottom += lane
+	}
+
+	boxX := func(i int) int { return Margin + col[i]*(colW+HGap) + (colW-c.BoxW)/2 }
+
+	for i, st := range d.Steps {
+		r := i / perRow
+		x, by := boxX(i), rowY[r]
+		cy := by + c.BoxH/2
 		s.Items = append(s.Items,
-			Rect{X: x, Y: rowY, W: c.BoxW, H: c.BoxH},
+			Rect{X: x, Y: by, W: c.BoxW, H: c.BoxH},
 			Text{X: x + c.BoxW/2, Y: cy + 5, S: st.Title, Anchor: Middle},
 		)
 		if i > 0 {
-			prevRight := colX - HGap - (colW-c.BoxW)/2
-			s.Items = append(s.Items, Line{X1: prevRight, Y1: cy, X2: x - Inset, Y2: cy, Head: true})
-			if st.In != "" {
-				s.Items = append(s.Items, Text{X: (prevRight + x) / 2, Y: cy - LabelGap, S: st.In, Anchor: Middle})
+			if pr := (i - 1) / perRow; pr == r {
+				fromX := boxX(i - 1)
+				var x1, x2 int
+				if x > fromX { // left-to-right row
+					x1, x2 = fromX+c.BoxW, x-Inset
+				} else { // right-to-left row
+					x1, x2 = fromX, x+c.BoxW+Inset
+				}
+				s.Items = append(s.Items, Line{X1: x1, Y1: cy, X2: x2, Y2: cy, Head: true})
+				if st.In != "" {
+					s.Items = append(s.Items, Text{X: (fromX + x + c.BoxW) / 2, Y: cy - LabelGap, S: st.In, Anchor: Middle})
+				}
+			} else { // snake turn: vertical arrow into this row's first box
+				tx := x + c.BoxW/2
+				fromY := rowY[pr] + c.BoxH
+				s.Items = append(s.Items, Line{X1: tx, Y1: fromY, X2: tx, Y2: by - Inset, Head: true})
+				if st.In != "" {
+					s.Items = append(s.Items, Text{X: tx + LabelGap, Y: (fromY+by)/2 + 5, S: st.In, Anchor: Start})
+				}
 			}
 		}
 		if len(st.Stores) > 0 {
 			sx := x + c.BoxW/2 - groupWidth(st.Stores, c.Face)/2
 			for _, l := range st.Stores {
 				sw := storeWidth(l, c.Face)
-				emitStore(s, l, sx, sw, x, rowY, c)
+				emitStore(s, l, sx, sw, x, by, side[i], c)
 				sx += sw + StoreGap
 			}
 		}
 	}
-	s.W = 2*Margin + n*colW + (n-1)*HGap
-	s.H = rowY + c.BoxH + Margin
+	s.W = 2*Margin + maxCols*colW + (maxCols-1)*HGap
+	s.H = rowY[nRows-1] + c.BoxH + bottom
 	return s, nil
 }
 
@@ -107,18 +211,29 @@ func groupWidth(links []ast.StoreLink, face font.Face) int {
 	return w
 }
 
-// emitStore draws one datastore glyph spanning [sx, sx+sw] above the
-// box whose left edge is bx, plus its arrows and their labels. Arrow x
-// positions follow the glyph center but are clamped into the box span
-// so arrows always leave the box.
-func emitStore(s *Scene, l ast.StoreLink, sx, sw, bx, by int, c Config) {
+// emitStore draws one datastore glyph spanning [sx, sx+sw] beside the
+// box whose left edge is bx and top edge by, on the given side (+1
+// above, -1 below), plus its arrows and their labels. Arrow x positions
+// follow the glyph center but are clamped into the box span so arrows
+// always leave the box.
+func emitStore(s *Scene, l ast.StoreLink, sx, sw, bx, by, side int, c Config) {
 	cx := sx + sw/2
-	line2 := by - StoreArrow // glyph line nearest the box
-	line1 := line2 - StoreH
+	// near = glyph line facing the box; upper = the glyph's top line.
+	var near, upper, boxEdge int
+	if side >= 0 { // above
+		near = by - StoreArrow
+		upper = near - StoreH
+		boxEdge = by
+	} else { // below
+		boxEdge = by + c.BoxH
+		near = boxEdge + StoreArrow
+		upper = near
+	}
+	lower := upper + StoreH
 	s.Items = append(s.Items,
-		Line{X1: sx, Y1: line1, X2: sx + sw, Y2: line1, Thick: true},
-		Line{X1: sx, Y1: line2, X2: sx + sw, Y2: line2, Thick: true},
-		Text{X: cx, Y: line1 + (StoreH+c.FontSize)/2 - 2, S: l.Name, Anchor: Middle},
+		Line{X1: sx, Y1: upper, X2: sx + sw, Y2: upper, Thick: true},
+		Line{X1: sx, Y1: lower, X2: sx + sw, Y2: lower, Thick: true},
+		Text{X: cx, Y: upper + (StoreH+c.FontSize)/2 - 2, S: l.Name, Anchor: Middle},
 	)
 	clamp := func(v int) int {
 		if min := bx + 20; v < min {
@@ -135,9 +250,13 @@ func emitStore(s *Scene, l ast.StoreLink, sx, sw, bx, by int, c Config) {
 		putX, getX = cx-20, cx+20
 	}
 	putX, getX = clamp(putX), clamp(getX)
-	labelY := (by+line2)/2 + 5
+	labelY := (boxEdge+near)/2 + 5
+	dir := 1 // sign from box toward store
+	if side < 0 {
+		dir = -1
+	}
 	if l.Put != nil {
-		s.Items = append(s.Items, Line{X1: putX, Y1: by, X2: putX, Y2: line2 + Inset, Head: true})
+		s.Items = append(s.Items, Line{X1: putX, Y1: boxEdge, X2: putX, Y2: near + dir*Inset, Head: true})
 		if l.Put.Label != "" {
 			if l.Get != nil { // get's label takes the right side
 				s.Items = append(s.Items, Text{X: putX - LabelGap, Y: labelY, S: l.Put.Label, Anchor: End})
@@ -147,7 +266,7 @@ func emitStore(s *Scene, l ast.StoreLink, sx, sw, bx, by int, c Config) {
 		}
 	}
 	if l.Get != nil {
-		s.Items = append(s.Items, Line{X1: getX, Y1: line2, X2: getX, Y2: by - Inset, Head: true})
+		s.Items = append(s.Items, Line{X1: getX, Y1: near, X2: getX, Y2: boxEdge - dir*Inset, Head: true})
 		if l.Get.Label != "" {
 			s.Items = append(s.Items, Text{X: getX + LabelGap, Y: labelY, S: l.Get.Label, Anchor: Start})
 		}

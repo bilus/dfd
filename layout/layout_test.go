@@ -230,6 +230,134 @@ func TestMultipleStoresSideBySideWithWidening(t *testing.T) {
 	}
 }
 
+func rects(s *layout.Scene) []layout.Rect {
+	var out []layout.Rect
+	for _, it := range s.Items {
+		if r, ok := it.(layout.Rect); ok {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+func TestSnakeRowsAndTurns(t *testing.T) {
+	s := arrange(t, "[One]\n[Two]\n[Three]\n[Four]\n[Five]\n", layout.Config{
+		BoxW: 160, BoxH: 60, MaxWidth: 700, FontSize: 13,
+	})
+	rs := rects(s)
+	if len(rs) != 5 {
+		t.Fatalf("got %d rects, want 5", len(rs))
+	}
+	for i, wantY := range []int{40, 40, 190, 190, 340} {
+		if rs[i].Y != wantY {
+			t.Errorf("box %d y = %d, want %d", i, rs[i].Y, wantY)
+		}
+	}
+	for i, wantX := range []int{40, 290, 290, 40, 40} {
+		if rs[i].X != wantX {
+			t.Errorf("box %d x = %d, want %d (snake mirror)", i, rs[i].X, wantX)
+		}
+	}
+	var turns, horiz []layout.Line
+	for _, a := range headArrows(s) {
+		if a.X1 == a.X2 {
+			turns = append(turns, a)
+		} else {
+			horiz = append(horiz, a)
+		}
+	}
+	if len(turns) != 2 || len(horiz) != 2 {
+		t.Fatalf("got %d turns / %d horizontal, want 2/2", len(turns), len(horiz))
+	}
+	if want := (layout.Line{X1: 370, Y1: 100, X2: 370, Y2: 187, Head: true}); turns[0] != want {
+		t.Errorf("first turn = %+v, want %+v", turns[0], want)
+	}
+	if want := (layout.Line{X1: 120, Y1: 250, X2: 120, Y2: 337, Head: true}); turns[1] != want {
+		t.Errorf("second turn = %+v, want %+v", turns[1], want)
+	}
+	if want := (layout.Line{X1: 290, Y1: 220, X2: 203, Y2: 220, Head: true}); horiz[1] != want {
+		t.Errorf("row-1 arrow = %+v, want %+v (right to left)", horiz[1], want)
+	}
+	if s.W != 490 || s.H != 440 {
+		t.Errorf("scene = %dx%d, want 490x440", s.W, s.H)
+	}
+}
+
+func TestTurnArrowLabel(t *testing.T) {
+	s := arrange(t, "[One]\n[Two]\n> down\n[Three]\n", layout.Config{
+		BoxW: 160, BoxH: 60, MaxWidth: 1000, PerRow: 2, FontSize: 13,
+	})
+	if !sceneTexts(s)[layout.Text{X: 378, Y: 150, S: "down", Anchor: layout.Start}] {
+		t.Error("turn label not right of the vertical arrow")
+	}
+}
+
+func TestStoreSidesAcrossRows(t *testing.T) {
+	src := `[A]
+[B]
+> x
+|SB|
+[C]
+> y
+|SC|
+[D]
+[E]
+> z
+|SE|
+[F]
+`
+	s := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, MaxWidth: 1000, PerRow: 2, FontSize: 13})
+	rs := rects(s)
+	if len(rs) != 6 {
+		t.Fatalf("got %d rects, want 6", len(rs))
+	}
+	for i, wantY := range []int{140, 140, 290, 290, 480, 480} {
+		if rs[i].Y != wantY {
+			t.Errorf("box %d y = %d, want %d (lanes grow gaps)", i, rs[i].Y, wantY)
+		}
+	}
+	var thick []layout.Line
+	for _, it := range s.Items {
+		if l, ok := it.(layout.Line); ok && l.Thick {
+			thick = append(thick, l)
+		}
+	}
+	if len(thick) != 6 {
+		t.Fatalf("got %d thick lines, want 6 (three glyphs)", len(thick))
+	}
+	// SB above row 0: lines at 40 and 76 over box B (col 1).
+	if thick[0].Y1 != 40 || thick[1].Y1 != 76 {
+		t.Errorf("SB glyph lines at %d/%d, want 40/76 (above row 0)", thick[0].Y1, thick[1].Y1)
+	}
+	// SC below row 1 (C is row-first, its top is taken by the turn arrow):
+	// upper line at boxBottom+StoreArrow = 350+64 = 414.
+	if thick[2].Y1 != 414 || thick[3].Y1 != 450 {
+		t.Errorf("SC glyph lines at %d/%d, want 414/450 (flipped below)", thick[2].Y1, thick[3].Y1)
+	}
+	// SE below row 2 (last row): upper line at 480+60+64 = 604.
+	if thick[4].Y1 != 604 || thick[5].Y1 != 640 {
+		t.Errorf("SE glyph lines at %d/%d, want 604/640 (below last row)", thick[4].Y1, thick[5].Y1)
+	}
+	if s.H != 680 {
+		t.Errorf("scene h = %d, want 680 (bottom lane)", s.H)
+	}
+}
+
+func TestPerRowOneStoreHasNoFreeSide(t *testing.T) {
+	d, err := parse.Parse(strings.NewReader("[A]\n[B]\n> x\n|S|\n[C]\n"), "test.dfd")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	face, err := typeface.New(13)
+	if err != nil {
+		t.Fatalf("typeface: %v", err)
+	}
+	_, err = layout.Arrange(d, layout.Config{BoxW: 160, BoxH: 60, PerRow: 1, FontSize: 13, Face: face})
+	if err == nil || !strings.Contains(err.Error(), "no free side") {
+		t.Fatalf("err = %v, want no-free-side error", err)
+	}
+}
+
 func TestSingleBoxScene(t *testing.T) {
 	s := arrange(t, "[Hello]\n", layout.Config{})
 	if s.W != 240 || s.H != 140 || s.FontSize != 13 {
