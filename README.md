@@ -2,20 +2,44 @@
 
 Turn condensed text into data-flow diagrams (SVG/PNG).
 
+![Data-flow diagram with seven process boxes snaking across two rows, a
+datastore read and written above the third box, and a datastore written
+below the sixth](examples/original.png)
+
+That picture is this text ([examples/original.dfd](examples/original.dfd)):
+
 ```
 [Start process]
-> input
-[Store record]
-    > input
-    < record id
+> foo
+[Continue running]
+> foo
+[Change something that doesn't work]
+    > data
+    < result
+    |Somethnigs|
+> foo bar
+[Blah blah]
+> decision
+[Revert]
+> something
+[Store data in database]
+    > something
     |Database|
-> record id
+> thing2
 [Finish]
 ```
 
+rendered with:
+
+```
+dfd --max-width 1100 examples/original.dfd -o examples/original.png
+```
+
+Other ways to run it:
+
 ```
 dfd flow.dfd -o flow.svg
-dfd flow.dfd -o flow.png
+dfd flow.dfd              # writes flow.svg next to the input
 cat flow.dfd | dfd > flow.svg
 ```
 
@@ -49,7 +73,7 @@ rows, datastores sit above or below their process, long titles wrap.
 
 Full syntax, error catalogue, and rendering rules:
 [docs/superpowers/specs/2026-07-23-text-to-dfd-design.md](docs/superpowers/specs/2026-07-23-text-to-dfd-design.md).
-Example: [examples/original.dfd](examples/original.dfd) →
+The example above is also checked in as
 [examples/original.svg](examples/original.svg).
 
 ## Develop
