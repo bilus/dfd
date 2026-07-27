@@ -1,1 +1,6 @@
 /dfd
+
+# scratch diagrams at the repo root; real examples live in examples/
+/*.dfd
+/*.svg
+/*.png
