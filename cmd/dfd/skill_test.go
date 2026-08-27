@@ -62,6 +62,9 @@ func TestSkillFlagsExist(t *testing.T) {
 	var usage bytes.Buffer
 	cli.Run([]string{"--help"}, strings.NewReader(""), io.Discard, &usage)
 	for _, m := range regexp.MustCompile(`--[a-z][a-z-]+`).FindAllString(skillText(t), -1) {
+		if m == "--help" {
+			continue // provided by the flag package, so it is not in its own listing
+		}
 		name := "-" + strings.TrimPrefix(m, "--")
 		if !strings.Contains(usage.String(), name+" ") && !strings.Contains(usage.String(), name+"\n") {
 			t.Errorf("skill names %s, which dfd does not accept:\n%s", m, usage.String())

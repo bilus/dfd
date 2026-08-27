@@ -22,7 +22,7 @@ branch syntax. Reach for Mermaid or Graphviz instead.
 | Line | Means |
 | --- | --- |
 | `[Text]` | Process box. Document order is the flow. |
-| `{Text}` | External entity: a source or sink outside the system. |
+| `{Text}` | External entity: a source or sink outside the system. May sit anywhere in the flow, not only at the ends. |
 | `\|Text\|` | Datastore, attached to the process above it. |
 | `> label` | Forward arrow. Before a process it is the flow arrow; before a datastore it is the write. |
 | `< label` | Return arrow. Only before a datastore: the read. |
@@ -57,7 +57,8 @@ dfd flow.dfd -o flow.svg
 ## Running it
 
 `dfd in.dfd -o out.svg` or `-o out.png`; the extension picks the format.
-Reads stdin and writes stdout when you leave them off.
+Reads stdin and writes stdout when you leave them off. `dfd --help` prints
+the flags with one dash; Go accepts either, and this page uses two.
 
 | Flag | Does |
 | --- | --- |
@@ -84,6 +85,11 @@ processes is one store and keeps one number; the alias saves retyping:
 
 With `--number` both glyphs read `D1 Registration`.
 
+Identity is about numbering, not drawing: a repeated node is drawn again
+wherever it appears, which is how a DFD shows one store or one customer
+touching several steps. Entities are drawn again too and never take a
+number.
+
 ## In org-mode
 
 ```org
@@ -105,5 +111,6 @@ substitution in the body.
 | `<` before a process | Error. Return arrows only precede a datastore. |
 | A datastore under `{Entity}` | Error. Data cannot flow straight between an entity and a store; put a process between them. |
 | Expecting a branch | There is none. Split into several diagrams. |
+| Expecting a reply from an external system | There is no return arrow from `{Entity}`; `<` only precedes a datastore. A call that answers back is drawn as the flow passing through the entity and on to the next process. Model a true round trip as two diagrams, or accept the pass-through reading. |
 | A datastore name over two lines | Error. Only processes and entities span lines. |
 | Very long arrow labels | They wrap at word boundaries. One unbreakable word widens every column gap, so keep labels short or break them yourself. |
