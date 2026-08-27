@@ -48,7 +48,7 @@ func paint(s *layout.Scene, th theme.Theme, c canvas) {
 			st := th.Style(v.Role)
 			if th.LabelChip && v.Role == theme.Label {
 				x, y, w, h := chip(v, st)
-				c.Rect(x, y, w, h, 3, th.Canvas, "", "", 0)
+				c.Rect(x, y, w, h, 3, th.ChipFill, "", "", 0)
 			}
 			c.Text(v.X, v.Y, v.S, v.Anchor, st)
 		}

@@ -80,6 +80,11 @@ type Theme struct {
 	EntityShadow int    // drop-shadow offset, 0 = none
 	EntityAccent bool   // draw the accent bar on an entity
 
+	// ChipFill is what a label chip is painted with. It is separate
+	// from Canvas so that repainting the page leaves the chips, and
+	// everything else a theme decides, alone.
+	ChipFill string
+
 	// BandRule divides the number compartment from the title.
 	BandRule string
 
@@ -160,6 +165,7 @@ func newDefault(base int) (Theme, error) {
 		EntityStroke:  "#000",
 		EntityShadow:  6,
 		EntityAccent:  true,
+		ChipFill:      "#fff",
 		BandRule:      "#000",
 	}
 	num := st
@@ -219,6 +225,7 @@ func newPlex(base int) (Theme, error) {
 		EntityStroke:  "#8A94A0",
 		EntityDash:    "5 4",
 		EntityAccent:  false,
+		ChipFill:      paper,
 		BandRule:      "#C9D1D9",
 		LabelOnLine:   true,
 		LabelChip:     true,
