@@ -13,6 +13,10 @@ import (
 	"github.com/bilus/dfd/internal/typeface"
 )
 
+// ChipPadX is the horizontal padding inside a label chip. Layout needs
+// it to size column gaps; render needs it to draw the chip.
+const ChipPadX = 8
+
 // Role is the kind of text a scene item carries. A theme styles each
 // role separately.
 type Role int
@@ -64,8 +68,13 @@ type Theme struct {
 
 	ArrowColor   string
 	ArrowStrokeW float64
-	ArrowHead    int  // arrowhead marker size
-	LabelChip    bool // mask the line behind an arrow label
+	ArrowHead    int // arrowhead marker size
+
+	// LabelOnLine centres flow and turn labels on their arrow rather
+	// than setting them beside it; LabelChip then masks the line where
+	// the text crosses it.
+	LabelOnLine bool
+	LabelChip   bool
 
 	styles [numRoles]Style
 }
@@ -150,6 +159,7 @@ func newPlex(base int) (Theme, error) {
 		ArrowColor:    violet,
 		ArrowStrokeW:  1.4,
 		ArrowHead:     7,
+		LabelOnLine:   true,
 		LabelChip:     true,
 	}
 	t.styles = [numRoles]Style{

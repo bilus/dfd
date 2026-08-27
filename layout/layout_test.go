@@ -502,3 +502,123 @@ func TestSingleBoxScene(t *testing.T) {
 		t.Errorf("text = %+v, want centered baseline at (120,75)", s.Items[1])
 	}
 }
+
+func plexTheme(t *testing.T, base int) theme.Theme {
+	t.Helper()
+	th, err := theme.Lookup("plex", base)
+	if err != nil {
+		t.Fatalf("theme: %v", err)
+	}
+	return th
+}
+
+func TestPlexCentresFlowLabelsOnTheArrow(t *testing.T) {
+	th := plexTheme(t, 13)
+	s := arrange(t, "[A]\n> go\n[B]\n", layout.Config{
+		BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th,
+	})
+	var got *layout.Text
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok && tx.S == "go" {
+			got = &tx
+		}
+	}
+	if got == nil {
+		t.Fatal("flow label not in scene")
+	}
+	var arrow layout.Line
+	for _, l := range headArrows(s) {
+		arrow = l
+	}
+	// The chip masks the line, so the text sits on it rather than above.
+	if want := arrow.Y1 + int(th.Style(theme.Label).Size)/3; got.Y != want {
+		t.Errorf("label baseline = %d, want %d (centred on the arrow at y=%d)", got.Y, want, arrow.Y1)
+	}
+	if got.Anchor != layout.Middle {
+		t.Errorf("anchor = %v, want Middle", got.Anchor)
+	}
+}
+
+func TestPlexCentresTurnLabelsOnTheArrow(t *testing.T) {
+	th := plexTheme(t, 13)
+	s := arrange(t, "[One]\n[Two]\n> down\n[Three]\n", layout.Config{
+		BoxW: 160, BoxH: 60, MaxWidth: 1000, PerRow: 2, FontSize: 13, Theme: th,
+	})
+	var turn layout.Line
+	for _, l := range headArrows(s) {
+		if l.X1 == l.X2 {
+			turn = l
+		}
+	}
+	if turn.X1 == 0 {
+		t.Fatal("no turn arrow")
+	}
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok && tx.S == "down" {
+			if tx.X != turn.X1 || tx.Anchor != layout.Middle {
+				t.Errorf("turn label at x=%d anchor=%v, want x=%d centred", tx.X, tx.Anchor, turn.X1)
+			}
+			return
+		}
+	}
+	t.Fatal("turn label not in scene")
+}
+
+func TestDefaultKeepsLabelsBesideTheArrow(t *testing.T) {
+	s := arrange(t, "[A]\n> go\n[B]\n", layout.Config{})
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok && tx.S == "go" {
+			if tx.Y != 62 {
+				t.Errorf("default label baseline = %d, want 62 (above the line, unchanged)", tx.Y)
+			}
+			return
+		}
+	}
+	t.Fatal("flow label not in scene")
+}
+
+func TestPlexGapLeavesArrowVisibleAroundTheChip(t *testing.T) {
+	th := plexTheme(t, 13)
+	s := arrange(t, "[A]\n> record id\n[B]\n", layout.Config{
+		BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th,
+	})
+	rs := rects(s)
+	gap := rs[1].X - (rs[0].X + 160)
+	chip := layout.TextWidth("record id", th.Style(theme.Label).Face) + 2*theme.ChipPadX
+	if stub := (gap - chip) / 2; stub < layout.LabelStub {
+		t.Errorf("only %dpx of arrow shows either side of the %dpx chip in a %dpx gap; want >= %d",
+			stub, chip, gap, layout.LabelStub)
+	}
+}
+
+func TestPlexKeepsALabelOnOneLine(t *testing.T) {
+	th := plexTheme(t, 13)
+	s := arrange(t, "[A]\n> config, server node\n[B]\n", layout.Config{
+		BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th,
+	})
+	n := 0
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok && tx.Role == theme.Label {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("label split into %d lines; on-line labels widen the gap instead of wrapping", n)
+	}
+}
+
+func TestPlexHonoursExplicitLabelBreaks(t *testing.T) {
+	th := plexTheme(t, 13)
+	s := arrange(t, "[A]\n> one\n  two\n[B]\n", layout.Config{
+		BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th,
+	})
+	var got []string
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok && tx.Role == theme.Label {
+			got = append(got, tx.S)
+		}
+	}
+	if len(got) != 2 || got[0] != "one" || got[1] != "two" {
+		t.Errorf("label lines = %q, want [one two]", got)
+	}
+}

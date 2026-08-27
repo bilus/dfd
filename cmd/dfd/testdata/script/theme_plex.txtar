@@ -1,0 +1,45 @@
+dfd --theme plex flow.dfd -o flow.svg
+cmp flow.svg want.svg
+
+-- flow.dfd --
+[Initial step]
+> input
+[Store in database]
+    > input
+    < record id
+    |Somethings|
+> record id
+[Return to user]
+-- want.svg --
+<svg viewBox="0 0 802 240" width="802" height="240" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, Helvetica Neue, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0L10,5L0,10z" fill="#63489E"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="802" height="240" fill="#F2F4F6"/>
+  <rect x="40" y="140" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="40" y="144" width="3" height="52" fill="#63489E"/>
+  <text x="120" y="175" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Initial step</text>
+  <rect x="321" y="140" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="321" y="144" width="3" height="52" fill="#63489E"/>
+  <text x="401" y="175" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Store in database</text>
+  <line x1="200" y1="170" x2="318" y2="170" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="234" y="158" width="53" height="24" rx="3" fill="#F2F4F6"/>
+  <text x="260" y="174" fill="#63489E" text-anchor="middle" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">input</text>
+  <line x1="326" y1="40" x2="476" y2="40" stroke="#12161A" stroke-width="1.25"/>
+  <line x1="326" y1="76" x2="476" y2="76" stroke="#12161A" stroke-width="1.25"/>
+  <text x="401" y="63" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Somethings</text>
+  <line x1="381" y1="140" x2="381" y2="79" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="328" y="97" width="53" height="24" rx="3" fill="#F2F4F6"/>
+  <text x="373" y="113" fill="#63489E" text-anchor="end" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">input</text>
+  <line x1="421" y1="76" x2="421" y2="137" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="421" y="97" width="81" height="24" rx="3" fill="#F2F4F6"/>
+  <text x="429" y="113" fill="#63489E" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">record id</text>
+  <rect x="602" y="140" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="602" y="144" width="3" height="52" fill="#63489E"/>
+  <text x="682" y="175" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Return to user</text>
+  <line x1="481" y1="170" x2="599" y2="170" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="501" y="158" width="81" height="24" rx="3" fill="#F2F4F6"/>
+  <text x="541" y="174" fill="#63489E" text-anchor="middle" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">record id</text>
+</svg>

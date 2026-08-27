@@ -28,8 +28,9 @@ func PNG(s *layout.Scene, th theme.Theme, scale float64, w io.Writer) error {
 			fillStroke(dc, px(v.X), px(v.Y), px(v.W), px(v.H), float64(th.BoxRadius)*scale,
 				th.BoxFill, th.BoxStroke, th.BoxStrokeW*scale)
 			if th.AccentW > 0 {
+				ay, ah := insetAccent(v, th)
 				dc.SetHexColor(th.AccentColor)
-				dc.DrawRectangle(px(v.X), px(v.Y), px(th.AccentW), px(v.H))
+				dc.DrawRectangle(px(v.X), px(ay), px(th.AccentW), px(ah))
 				dc.Fill()
 			}
 		case layout.Line:

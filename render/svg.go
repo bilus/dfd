@@ -27,8 +27,9 @@ func SVG(s *layout.Scene, th theme.Theme, w io.Writer) error {
 			p.f(`  <rect x="%d" y="%d" width="%d" height="%d"%s fill="%s" stroke="%s" stroke-width="%s"/>`+"\n",
 				v.X, v.Y, v.W, v.H, radius(th), th.BoxFill, th.BoxStroke, num(th.BoxStrokeW))
 			if th.AccentW > 0 {
+				y, h := insetAccent(v, th)
 				p.f(`  <rect x="%d" y="%d" width="%d" height="%d" fill="%s"/>`+"\n",
-					v.X, v.Y, th.AccentW, v.H, th.AccentColor)
+					v.X, y, th.AccentW, h, th.AccentColor)
 			}
 		case layout.Line:
 			stroke, width := th.ArrowColor, th.ArrowStrokeW
@@ -58,7 +59,7 @@ func SVG(s *layout.Scene, th theme.Theme, w io.Writer) error {
 // chip is the box drawn behind an arrow label so the line it crosses
 // does not run through the text.
 func chip(t layout.Text, st theme.Style) (x, y, w, h int) {
-	const padX = 8
+	const padX = theme.ChipPadX
 	w = layout.TextWidth(t.S, st.Face) + 2*padX
 	h = int(st.Size) + 12
 	switch t.Anchor {
@@ -74,6 +75,12 @@ func chip(t layout.Text, st theme.Style) (x, y, w, h int) {
 
 // num formats a stroke width the way it is written by hand: 2, not 2.0.
 func num(f float64) string { return strconv.FormatFloat(f, 'g', -1, 64) }
+
+// insetAccent shortens the accent bar by the corner radius so it stays
+// inside the box outline instead of poking past the rounded corners.
+func insetAccent(r layout.Rect, th theme.Theme) (y, h int) {
+	return r.Y + th.BoxRadius, r.H - 2*th.BoxRadius
+}
 
 func radius(th theme.Theme) string {
 	if th.BoxRadius == 0 {

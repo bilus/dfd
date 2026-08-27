@@ -20,6 +20,7 @@ const (
 	Inset      = 3  // gap between an arrow tip and the edge it points at
 	LabelGap   = 8  // distance between an arrow and its label
 	LabelPad   = 8  // clearance between a flow label and the boxes beside it
+	LabelStub  = 20 // arrow left visible either side of an on-line label chip
 	LanePad    = 30 // clearance between a store lane and the next row
 	BoxPad     = 12 // padding between box border and title text
 	StoreW     = 150
@@ -85,6 +86,14 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	// so the bound must be computed first).
 	gapW := HGap
 	for _, st := range d.Steps {
+		if c.Theme.LabelOnLine {
+			for _, seg := range strings.Split(st.In, "\n") {
+				if need := TextWidth(seg, labelSt.Face) + 2*theme.ChipPadX + 2*LabelStub; need > gapW {
+					gapW = need
+				}
+			}
+			continue
+		}
 		for _, w := range strings.Fields(st.In) {
 			if need := TextWidth(w, labelSt.Face) + 2*LabelPad; need > gapW {
 				gapW = need
@@ -207,9 +216,17 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 				s.Items = append(s.Items, Line{X1: x1, Y1: cy, X2: x2, Y2: cy, Head: true})
 				if st.In != "" {
 					lines := WrapSegments(st.In, gapW-2*LabelPad, labelSt.Face)
+					if c.Theme.LabelOnLine {
+						lines = strings.Split(st.In, "\n")
+					}
 					mid := (fromX + x + c.BoxW) / 2
 					for j, ln := range lines {
-						y := cy - LabelGap - (len(lines)-1-j)*labelSt.LineH()
+						var y int
+						if c.Theme.LabelOnLine {
+							y = baselineOn(cy, labelSt) + (j-(len(lines)-1)/2)*labelSt.LineH()
+						} else {
+							y = cy - LabelGap - (len(lines)-1-j)*labelSt.LineH()
+						}
 						s.Items = append(s.Items, Text{X: mid, Y: y, S: ln, Anchor: Middle, Role: theme.Label})
 					}
 				}
@@ -218,7 +235,12 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 				fromY := rowY[pr] + c.BoxH
 				s.Items = append(s.Items, Line{X1: tx, Y1: fromY, X2: tx, Y2: by - Inset, Head: true})
 				if st.In != "" {
-					emitLabelLines(s, st.In, tx+LabelGap, (fromY+by)/2+5, Start, labelSt)
+					mid := (fromY + by) / 2
+					if c.Theme.LabelOnLine {
+						emitLabelLines(s, st.In, tx, baselineOn(mid, labelSt), Middle, labelSt)
+					} else {
+						emitLabelLines(s, st.In, tx+LabelGap, mid+5, Start, labelSt)
+					}
 				}
 			}
 		}
@@ -235,6 +257,10 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	s.H = rowY[nRows-1] + c.BoxH + bottom
 	return s, nil
 }
+
+// baselineOn is the text baseline that visually centres a label on a
+// line at y, matching where a masking chip is drawn.
+func baselineOn(y int, st theme.Style) int { return y + int(st.Size)/3 }
 
 // emitLabelLines draws a label's explicit "\n" segments as a stack of
 // lines vertically centered on the baseline y.
