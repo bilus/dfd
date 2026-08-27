@@ -255,7 +255,81 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	}
 	s.W = 2*Margin + maxCols*colW + (maxCols-1)*gapW
 	s.H = rowY[nRows-1] + c.BoxH + bottom
+
+	// Arrow labels sit outside their column and can overhang the grid,
+	// so widen the canvas until everything keeps a full margin on both
+	// sides, shifting right if something overhangs the left edge. The
+	// margins stay equal because both sides end up at exactly Margin.
+	minX, maxX := s.extentX(c.Theme)
+	if shift := Margin - minX; shift > 0 {
+		s.shiftX(shift)
+		maxX += shift
+	}
+	if need := maxX + Margin; need > s.W {
+		s.W = need
+	}
 	return s, nil
+}
+
+// extentX is the horizontal span the scene actually occupies, including
+// text and the chips drawn behind labels.
+func (s *Scene) extentX(th theme.Theme) (minX, maxX int) {
+	minX, maxX = s.W, 0
+	grow := func(lo, hi int) {
+		if lo < minX {
+			minX = lo
+		}
+		if hi > maxX {
+			maxX = hi
+		}
+	}
+	for _, it := range s.Items {
+		switch v := it.(type) {
+		case Rect:
+			grow(v.X, v.X+v.W)
+		case Line:
+			grow(min(v.X1, v.X2), max(v.X1, v.X2))
+		case Text:
+			grow(textExtent(v, th))
+		}
+	}
+	return minX, maxX
+}
+
+// textExtent is where a text item lands horizontally, chip included.
+func textExtent(t Text, th theme.Theme) (lo, hi int) {
+	st := th.Style(t.Role)
+	w := TextWidth(t.S, st.Face)
+	switch t.Anchor {
+	case Middle:
+		lo, hi = t.X-w/2, t.X+w/2
+	case End:
+		lo, hi = t.X-w, t.X
+	default:
+		lo, hi = t.X, t.X+w
+	}
+	if th.LabelChip && t.Role == theme.Label {
+		lo, hi = lo-theme.ChipPadX, hi+theme.ChipPadX
+	}
+	return lo, hi
+}
+
+// shiftX moves every item right by d.
+func (s *Scene) shiftX(d int) {
+	for i, it := range s.Items {
+		switch v := it.(type) {
+		case Rect:
+			v.X += d
+			s.Items[i] = v
+		case Line:
+			v.X1 += d
+			v.X2 += d
+			s.Items[i] = v
+		case Text:
+			v.X += d
+			s.Items[i] = v
+		}
+	}
 }
 
 // baselineOn is the text baseline that visually centres a label on a

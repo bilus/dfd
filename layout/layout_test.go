@@ -622,3 +622,96 @@ func TestPlexHonoursExplicitLabelBreaks(t *testing.T) {
 		t.Errorf("label lines = %q, want [one two]", got)
 	}
 }
+
+// labelExtent is where a label actually lands, chip included. The test
+// measures it independently of layout so it can hold layout to account.
+func labelExtent(tx layout.Text, th theme.Theme) (lo, hi int) {
+	st := th.Style(tx.Role)
+	w := layout.TextWidth(tx.S, st.Face)
+	switch tx.Anchor {
+	case layout.Middle:
+		lo, hi = tx.X-w/2, tx.X+w/2
+	case layout.End:
+		lo, hi = tx.X-w, tx.X
+	default:
+		lo, hi = tx.X, tx.X+w
+	}
+	if th.LabelChip && tx.Role == theme.Label {
+		lo, hi = lo-theme.ChipPadX, hi+theme.ChipPadX
+	}
+	return lo, hi
+}
+
+func assertNothingClipped(t *testing.T, s *layout.Scene, th theme.Theme) {
+	t.Helper()
+	for _, it := range s.Items {
+		tx, ok := it.(layout.Text)
+		if !ok {
+			continue
+		}
+		lo, hi := labelExtent(tx, th)
+		if lo < layout.Margin {
+			t.Errorf("%q starts at x=%d, inside the left margin of %d", tx.S, lo, layout.Margin)
+		}
+		if hi > s.W-layout.Margin {
+			t.Errorf("%q ends at x=%d, past the %d canvas less its %d margin", tx.S, hi, s.W, layout.Margin)
+		}
+	}
+}
+
+func TestStoreLabelInLastColumnWidensTheCanvas(t *testing.T) {
+	th := plexTheme(t, 13)
+	s := arrange(t, "[Start]\n> go\n[Register live page]\n    > page id, mountFn, tree\n    |Registry|\n",
+		layout.Config{BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th})
+	assertNothingClipped(t, s, th)
+}
+
+func TestStoreLabelOverhangingTheLeftShiftsTheDiagram(t *testing.T) {
+	th := plexTheme(t, 13)
+	s := arrange(t, "[A]\n> a considerably long put label\n< out\n|S|\n",
+		layout.Config{BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th})
+	assertNothingClipped(t, s, th)
+	if rs := rects(s); rs[0].X <= layout.Margin {
+		t.Errorf("box x = %d; a label overhanging the left edge must push the diagram right", rs[0].X)
+	}
+}
+
+func TestNothingIsClippedAcrossThemes(t *testing.T) {
+	srcs := []string{
+		"[Start]\n> go\n[Register live page]\n    > page id, mountFn, tree\n    |Registry|\n",
+		"[A]\n> a considerably long put label\n< out\n|S|\n",
+		"[One]\n[Two]\n> down\n[Three]\n    < a long read label here\n    |Disk|\n",
+		"[Only]\n",
+	}
+	for _, name := range theme.Names() {
+		for i, src := range srcs {
+			th, err := theme.Lookup(name, 13)
+			if err != nil {
+				t.Fatalf("theme: %v", err)
+			}
+			s := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, MaxWidth: 700, FontSize: 13, Theme: th})
+			t.Run(name+"/"+string(rune('a'+i)), func(t *testing.T) {
+				assertNothingClipped(t, s, th)
+			})
+		}
+	}
+}
+
+func TestMarginsStaySymmetricWhenTheCanvasGrows(t *testing.T) {
+	th := plexTheme(t, 13)
+	s := arrange(t, "[Start]\n> go\n[Register live page]\n    > page id, mountFn, tree\n    |Registry|\n",
+		layout.Config{BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th})
+	lo, hi := s.W, 0
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok {
+			l, h := labelExtent(tx, th)
+			lo, hi = min(lo, l), max(hi, h)
+		}
+		if r, ok := it.(layout.Rect); ok {
+			lo, hi = min(lo, r.X), max(hi, r.X+r.W)
+		}
+	}
+	if left, right := lo, s.W-hi; left != right {
+		t.Errorf("margins are %d left and %d right; growing the canvas must keep them equal", left, right)
+	}
+}
