@@ -47,38 +47,42 @@ cmp narrow.svg want-narrow.svg
   <line x1="790" y1="220" x2="703" y2="220" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
 </svg>
 -- want-plex.svg --
-<svg viewBox="0 0 1365 290" width="1365" height="290" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, Helvetica Neue, Arial, sans-serif" font-size="13">
+<svg viewBox="0 0 1038 290" width="1038" height="290" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, Helvetica Neue, Arial, sans-serif" font-size="13">
   <defs>
     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0,0L10,5L0,10z" fill="#63489E"/>
     </marker>
   </defs>
-  <rect x="0" y="0" width="1365" height="290" fill="#F2F4F6"/>
+  <rect x="0" y="0" width="1038" height="290" fill="#F2F4F6"/>
   <rect x="40" y="40" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
   <rect x="40" y="44" width="3" height="52" fill="#63489E"/>
   <text x="120" y="75" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">One</text>
-  <rect x="415" y="40" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
-  <rect x="415" y="44" width="3" height="52" fill="#63489E"/>
-  <text x="495" y="75" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Two</text>
-  <line x1="200" y1="70" x2="412" y2="70" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
-  <rect x="220" y="58" width="175" height="24" rx="3" fill="#F2F4F6"/>
-  <text x="307" y="74" fill="#63489E" text-anchor="middle" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">page id, mountFn, tree</text>
-  <rect x="790" y="40" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
-  <rect x="790" y="44" width="3" height="52" fill="#63489E"/>
-  <text x="870" y="75" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Three</text>
-  <line x1="575" y1="70" x2="787" y2="70" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
-  <rect x="1165" y="40" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
-  <rect x="1165" y="44" width="3" height="52" fill="#63489E"/>
-  <text x="1245" y="75" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Four</text>
-  <line x1="950" y1="70" x2="1162" y2="70" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
-  <rect x="1165" y="190" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
-  <rect x="1165" y="194" width="3" height="52" fill="#63489E"/>
-  <text x="1245" y="225" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Five</text>
-  <line x1="1245" y1="100" x2="1245" y2="187" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
-  <rect x="790" y="190" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
-  <rect x="790" y="194" width="3" height="52" fill="#63489E"/>
-  <text x="870" y="225" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Six</text>
-  <line x1="1165" y1="220" x2="953" y2="220" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="306" y="40" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="306" y="44" width="3" height="52" fill="#63489E"/>
+  <text x="386" y="75" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Two</text>
+  <line x1="200" y1="70" x2="303" y2="70" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="216" y="46" width="74" height="16" rx="3" fill="#F2F4F6"/>
+  <text x="253" y="58" fill="#63489E" text-anchor="middle" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">page id,</text>
+  <rect x="216" y="62" width="74" height="16" rx="3" fill="#F2F4F6"/>
+  <text x="253" y="74" fill="#63489E" text-anchor="middle" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">mountFn,</text>
+  <rect x="231" y="78" width="45" height="16" rx="3" fill="#F2F4F6"/>
+  <text x="253" y="90" fill="#63489E" text-anchor="middle" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">tree</text>
+  <rect x="572" y="40" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="572" y="44" width="3" height="52" fill="#63489E"/>
+  <text x="652" y="75" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Three</text>
+  <line x1="466" y1="70" x2="569" y2="70" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="838" y="40" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="838" y="44" width="3" height="52" fill="#63489E"/>
+  <text x="918" y="75" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Four</text>
+  <line x1="732" y1="70" x2="835" y2="70" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="838" y="190" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="838" y="194" width="3" height="52" fill="#63489E"/>
+  <text x="918" y="225" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Five</text>
+  <line x1="918" y1="100" x2="918" y2="187" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="572" y="190" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="572" y="194" width="3" height="52" fill="#63489E"/>
+  <text x="652" y="225" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Six</text>
+  <line x1="838" y1="220" x2="735" y2="220" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
 </svg>
 -- want-narrow.svg --
 <svg viewBox="0 0 490 440" width="490" height="440" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="13">

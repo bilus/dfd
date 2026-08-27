@@ -61,7 +61,9 @@ func SVG(s *layout.Scene, th theme.Theme, w io.Writer) error {
 func chip(t layout.Text, st theme.Style) (x, y, w, h int) {
 	const padX = theme.ChipPadX
 	w = layout.TextWidth(t.S, st.Face) + 2*padX
-	h = int(st.Size) + 12
+	// Exactly one line tall, so the chips of a wrapped label tile
+	// instead of erasing the line above.
+	h = st.LineH()
 	switch t.Anchor {
 	case layout.Middle:
 		x = t.X - w/2

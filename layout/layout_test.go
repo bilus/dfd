@@ -577,54 +577,6 @@ func TestDefaultKeepsLabelsBesideTheArrow(t *testing.T) {
 	t.Fatal("flow label not in scene")
 }
 
-func TestPlexGapLeavesArrowVisibleAroundTheChip(t *testing.T) {
-	th := plexTheme(t, 13)
-	s := arrange(t, "[A]\n> record id\n[B]\n", layout.Config{
-		BoxW: 160, BoxH: 60, FontSize: 13, Theme: th,
-	})
-	rs := rects(s)
-	gap := rs[1].X - (rs[0].X + 160)
-	chip := layout.TextWidth("record id", th.Style(theme.Label).Face) + 2*theme.ChipPadX
-	if stub := (gap - chip) / 2; stub < layout.LabelStub {
-		t.Errorf("only %dpx of arrow shows either side of the %dpx chip in a %dpx gap; want >= %d",
-			stub, chip, gap, layout.LabelStub)
-	}
-}
-
-func TestPlexKeepsALabelOnOneLine(t *testing.T) {
-	th := plexTheme(t, 13)
-	s := arrange(t, "[A]\n> config, server node\n[B]\n", layout.Config{
-		BoxW: 160, BoxH: 60, FontSize: 13, Theme: th,
-	})
-	n := 0
-	for _, it := range s.Items {
-		if tx, ok := it.(layout.Text); ok && tx.Role == theme.Label {
-			n++
-		}
-	}
-	if n != 1 {
-		t.Errorf("label split into %d lines; on-line labels widen the gap instead of wrapping", n)
-	}
-}
-
-func TestPlexHonoursExplicitLabelBreaks(t *testing.T) {
-	th := plexTheme(t, 13)
-	s := arrange(t, "[A]\n> one\n  two\n[B]\n", layout.Config{
-		BoxW: 160, BoxH: 60, FontSize: 13, Theme: th,
-	})
-	var got []string
-	for _, it := range s.Items {
-		if tx, ok := it.(layout.Text); ok && tx.Role == theme.Label {
-			got = append(got, tx.S)
-		}
-	}
-	if len(got) != 2 || got[0] != "one" || got[1] != "two" {
-		t.Errorf("label lines = %q, want [one two]", got)
-	}
-}
-
-// labelExtent is where a label actually lands, chip included. The test
-// measures it independently of layout so it can hold layout to account.
 func labelExtent(tx layout.Text, th theme.Theme) (lo, hi int) {
 	st := th.Style(tx.Role)
 	w := layout.TextWidth(tx.S, st.Face)
@@ -752,5 +704,118 @@ func TestPerRowOverridesTheDefault(t *testing.T) {
 	})
 	if got := boxesInFirstRow(s); got != 3 {
 		t.Errorf("got %d boxes in the first row, want 3", got)
+	}
+}
+
+// gapOf is the uniform space between adjacent boxes in a row.
+func gapOf(t *testing.T, s *layout.Scene) int {
+	t.Helper()
+	rs := rects(s)
+	if len(rs) < 2 {
+		t.Fatal("need two boxes to measure a gap")
+	}
+	gap := rs[1].X - (rs[0].X + rs[0].W)
+	for i := 2; i < len(rs); i++ {
+		if rs[i].Y != rs[i-1].Y {
+			continue // a row turn, not a gap
+		}
+		if g := rs[i].X - (rs[i-1].X + rs[i-1].W); g != gap {
+			t.Errorf("gaps differ: %d then %d; every column gap must be the same width", gap, g)
+		}
+	}
+	return gap
+}
+
+func labelLines(s *layout.Scene) []string {
+	var out []string
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok && tx.Role == theme.Label {
+			out = append(out, tx.S)
+		}
+	}
+	return out
+}
+
+// The agreed rule, for every theme: flow labels wrap at word
+// boundaries; the column gap stays at HGap unless a single word cannot
+// be wrapped, and then every gap grows to exactly what that word needs.
+func TestFlowLabelGapIsHGapUnlessAWordCannotFit(t *testing.T) {
+	labels := []string{
+		"go",
+		"config, server node",
+		"page id, mountFn, tree",
+		"internationalization",
+		"a b c d e f g h i j k l m n o p",
+	}
+	for _, name := range theme.Names() {
+		th, err := theme.Lookup(name, 13)
+		if err != nil {
+			t.Fatalf("theme: %v", err)
+		}
+		inset := layout.LabelInset(th)
+		face := th.Style(theme.Label).Face
+		for _, label := range labels {
+			t.Run(name+"/"+label, func(t *testing.T) {
+				s := arrange(t, "[A]\n> "+label+"\n[B]\n", layout.Config{
+					BoxW: 160, BoxH: 60, FontSize: 13, Theme: th,
+				})
+				widest := 0
+				for _, w := range strings.Fields(label) {
+					if x := layout.TextWidth(w, face); x > widest {
+						widest = x
+					}
+				}
+				want := layout.HGap
+				if need := widest + inset; need > want {
+					want = need
+				}
+				gap := gapOf(t, s)
+				if gap != want {
+					t.Errorf("gap = %d, want %d (widest word %d + inset %d, floor %d)",
+						gap, want, widest, inset, layout.HGap)
+				}
+				for _, ln := range labelLines(s) {
+					if w := layout.TextWidth(ln, face); w > gap-inset {
+						t.Errorf("label line %q is %dpx, over the %dpx a %dpx gap leaves", ln, w, gap-inset, gap)
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestFlowLabelsAreSplitAtWordBoundaries(t *testing.T) {
+	for _, name := range theme.Names() {
+		th, err := theme.Lookup(name, 13)
+		if err != nil {
+			t.Fatalf("theme: %v", err)
+		}
+		s := arrange(t, "[A]\n> page id, mountFn, tree\n[B]\n", layout.Config{
+			BoxW: 160, BoxH: 60, FontSize: 13, Theme: th,
+		})
+		lines := labelLines(s)
+		if len(lines) < 2 {
+			t.Errorf("theme %q left the label on %d line(s); it must wrap rather than widen the gap", name, len(lines))
+		}
+		if got := strings.Join(lines, " "); got != "page id, mountFn, tree" {
+			t.Errorf("theme %q wrapped to %q, losing the original words", name, got)
+		}
+	}
+}
+
+func TestOneLongWordWidensEveryGapEqually(t *testing.T) {
+	for _, name := range theme.Names() {
+		th, err := theme.Lookup(name, 13)
+		if err != nil {
+			t.Fatalf("theme: %v", err)
+		}
+		s := arrange(t, "[A]\n> internationalization\n[B]\n> x\n[C]\n", layout.Config{
+			BoxW: 160, BoxH: 60, FontSize: 13, Theme: th,
+		})
+		gap := gapOf(t, s) // gapOf itself fails if the gaps differ
+		want := layout.TextWidth("internationalization", th.Style(theme.Label).Face) + layout.LabelInset(th)
+		if gap != want {
+			t.Errorf("theme %q gap = %d, want %d", name, gap, want)
+		}
 	}
 }

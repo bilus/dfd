@@ -152,7 +152,7 @@ implemented renderer (visually reviewed), not from the hand-made file.
 | Font size      | 13px    | `--font-size` | SVG: `Helvetica, Arial, sans-serif`; PNG: embedded Go Regular. |
 | Store symbol   | 150 wide, lines 36 apart | — | Widens to fit long names + 20px padding. |
 | Store arrow length | 64px | —            | Vertical, between box edge and near store line. |
-| Column gap     | 90px    | —             | Horizontal space between boxes; holds flow labels. |
+| Column gap     | 90px    | —             | Horizontal space between boxes; holds flow labels. Uniform, and grows only for an unwrappable word (see Flow label invariant). |
 | Base row gap   | 90px    | —             | Grows when stores occupy the gap.        |
 | Canvas margin  | 40px    | —             | White background, both formats. The canvas grows past the grid when an arrow label overhangs a column, keeping both margins equal. |
 | PNG scale      | 2       | `--scale`     | Resolution multiplier.                   |
@@ -201,6 +201,31 @@ Every face is embedded in the binary (Go Regular for `default`, IBM Plex
 for `plex`, the latter under the SIL Open Font License 1.1), so neither
 measurement nor PNG output depends on installed system fonts. SVG names
 the font stack and leaves substitution to the viewer.
+
+## Flow label invariant
+
+This rule holds for every theme, present and future, and is enforced by
+tests parameterised over `theme.Names()`:
+
+1. Every column gap in a diagram is **the same width**.
+2. That width is `HGap` (90px), the standard gap.
+3. It grows past `HGap` only when a **single word** cannot be wrapped to
+   fit, and then only to exactly what that word needs:
+   `widest word + LabelInset(theme)`.
+4. Flow labels always wrap at word boundaries to `gap - LabelInset`.
+   A theme may not opt out of wrapping.
+
+`LabelInset` is the room a label needs beyond its own text and is the
+single source of truth for both halves of the rule, so the gap and the
+wrap width can never disagree: `2*LabelPad` for labels set above the
+line, and `2*ChipPadX + 2*LabelStub` for labels centred on it, the stub
+being the arrow left visible either side of the masking chip.
+
+A label chip is exactly one line tall (`Style.LineH()`), so the chips of
+a wrapped label tile instead of erasing the line above.
+
+Explicit line breaks in a label are honoured on top of this: each
+segment wraps independently.
 
 ## Layout algorithm
 

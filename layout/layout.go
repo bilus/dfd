@@ -20,7 +20,7 @@ const (
 	Inset      = 3  // gap between an arrow tip and the edge it points at
 	LabelGap   = 8  // distance between an arrow and its label
 	LabelPad   = 8  // clearance between a flow label and the boxes beside it
-	LabelStub  = 20 // arrow left visible either side of an on-line label chip
+	LabelStub  = 16 // arrow left visible either side of an on-line label chip
 	LanePad    = 30 // clearance between a store lane and the next row
 	BoxPad     = 12 // padding between box border and title text
 	StoreW     = 150
@@ -28,6 +28,18 @@ const (
 	StoreArrow = 64 // length of a box<->datastore arrow
 	StoreGap   = 20 // between side-by-side datastore glyphs
 )
+
+// LabelInset is the horizontal room a flow label needs beyond its own
+// text: chip padding plus a stub of arrow left visible at each end when
+// the label sits on the line, or clearance from the boxes beside it when
+// it sits above. Column gaps are sized with it and labels are wrapped to
+// what it leaves, so the two can never disagree.
+func LabelInset(th theme.Theme) int {
+	if th.LabelOnLine {
+		return 2*theme.ChipPadX + 2*LabelStub
+	}
+	return 2 * LabelPad
+}
 
 // DefaultPerRow is how many boxes a row holds when Config.PerRow is
 // unset. It is a fixed count rather than a width budget so that the
@@ -88,18 +100,14 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	// Conservatively sized from every label (labels that end up on turn
 	// arrows don't occupy a gap, but row assignment depends on the gap,
 	// so the bound must be computed first).
+	// Every column gap is the same width: the standard gap, unless some
+	// single word cannot be wrapped and needs more, in which case they
+	// all grow to that. Labels wrap at word boundaries to fit.
+	inset := LabelInset(c.Theme)
 	gapW := HGap
 	for _, st := range d.Steps {
-		if c.Theme.LabelOnLine {
-			for _, seg := range strings.Split(st.In, "\n") {
-				if need := TextWidth(seg, labelSt.Face) + 2*theme.ChipPadX + 2*LabelStub; need > gapW {
-					gapW = need
-				}
-			}
-			continue
-		}
 		for _, w := range strings.Fields(st.In) {
-			if need := TextWidth(w, labelSt.Face) + 2*LabelPad; need > gapW {
+			if need := TextWidth(w, labelSt.Face) + inset; need > gapW {
 				gapW = need
 			}
 		}
@@ -216,15 +224,13 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 				}
 				s.Items = append(s.Items, Line{X1: x1, Y1: cy, X2: x2, Y2: cy, Head: true})
 				if st.In != "" {
-					lines := WrapSegments(st.In, gapW-2*LabelPad, labelSt.Face)
-					if c.Theme.LabelOnLine {
-						lines = strings.Split(st.In, "\n")
-					}
+					lines := WrapSegments(st.In, gapW-inset, labelSt.Face)
 					mid := (fromX + x + c.BoxW) / 2
 					for j, ln := range lines {
 						var y int
 						if c.Theme.LabelOnLine {
-							y = baselineOn(cy, labelSt) + (j-(len(lines)-1)/2)*labelSt.LineH()
+							// centred on the line the chips mask
+							y = baselineOn(cy, labelSt) - (len(lines)-1)*labelSt.LineH()/2 + j*labelSt.LineH()
 						} else {
 							y = cy - LabelGap - (len(lines)-1-j)*labelSt.LineH()
 						}

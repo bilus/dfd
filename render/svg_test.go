@@ -1,6 +1,8 @@
 package render_test
 
 import (
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -102,4 +104,52 @@ func mustTheme(t *testing.T) theme.Theme {
 		t.Fatalf("theme: %v", err)
 	}
 	return th
+}
+
+// chipRects pulls the canvas-coloured chip rectangles out of the SVG.
+func chipRects(t *testing.T, out, canvas string) [][4]int {
+	t.Helper()
+	re := regexp.MustCompile(`<rect x="(-?\d+)" y="(-?\d+)" width="(\d+)" height="(\d+)" rx="3" fill="` + regexp.QuoteMeta(canvas) + `"/>`)
+	var got [][4]int
+	for _, m := range re.FindAllStringSubmatch(out, -1) {
+		var r [4]int
+		for i := range r {
+			n, err := strconv.Atoi(m[i+1])
+			if err != nil {
+				t.Fatalf("bad rect field %q: %v", m[i+1], err)
+			}
+			r[i] = n
+		}
+		got = append(got, r)
+	}
+	return got
+}
+
+func TestStackedLabelChipsDoNotOverlap(t *testing.T) {
+	th, err := theme.Lookup("plex", 13)
+	if err != nil {
+		t.Fatalf("theme: %v", err)
+	}
+	st := th.Style(theme.Label)
+	lh := st.LineH()
+	s := &layout.Scene{W: 400, H: 200, FontSize: 13, Items: []layout.Item{
+		layout.Text{X: 200, Y: 100, S: "page id,", Anchor: layout.Middle, Role: theme.Label},
+		layout.Text{X: 200, Y: 100 + lh, S: "mountFn,", Anchor: layout.Middle, Role: theme.Label},
+		layout.Text{X: 200, Y: 100 + 2*lh, S: "tree", Anchor: layout.Middle, Role: theme.Label},
+	}}
+	var b strings.Builder
+	if err := render.SVG(s, th, &b); err != nil {
+		t.Fatalf("SVG: %v", err)
+	}
+	chips := chipRects(t, b.String(), th.Canvas)
+	if len(chips) != 3 {
+		t.Fatalf("got %d chips, want one per label line", len(chips))
+	}
+	for i := 1; i < len(chips); i++ {
+		prevBottom := chips[i-1][1] + chips[i-1][3]
+		if chips[i][1] < prevBottom {
+			t.Errorf("chip %d starts at y=%d, above the previous chip's bottom at %d; it would erase the line above",
+				i, chips[i][1], prevBottom)
+		}
+	}
 }
