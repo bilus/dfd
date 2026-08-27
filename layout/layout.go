@@ -129,7 +129,14 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	boxH := c.BoxH
 	for i, st := range d.Steps {
 		titles[i] = WrapSegments(st.Title, c.BoxW-2*BoxPad, titleSt.Face)
-		if h := band + len(titles[i])*titleSt.LineH() + 2*BoxPad; h > boxH {
+		text := len(titles[i]) * titleSt.LineH()
+		h := text + 2*BoxPad
+		// The title stays centred in the box, so the box has to be tall
+		// enough that the space above it still clears the number band.
+		if band > 0 && text+2*band > h {
+			h = text + 2*band
+		}
+		if h > boxH {
 			boxH = h
 		}
 	}
@@ -259,7 +266,7 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 		if numbers[i] != "" {
 			s.Items = append(s.Items, Text{X: x + BoxPad, Y: by + BoxPad + numberSt.LineH()/2, S: numbers[i], Anchor: Start, Role: theme.Number})
 		}
-		titleCY := by + band + (c.BoxH-band)/2
+		titleCY := by + c.BoxH/2
 		first := titleCY + 5 - (len(titles[i])-1)*titleSt.LineH()/2
 		for j, ln := range titles[i] {
 			s.Items = append(s.Items, Text{X: x + c.BoxW/2, Y: first + j*titleSt.LineH(), S: ln, Anchor: Middle, Role: theme.Title})

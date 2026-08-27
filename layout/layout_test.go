@@ -974,3 +974,48 @@ func TestEntitiesRepeatWithoutTakingNumbers(t *testing.T) {
 		t.Errorf("numbers = %q, want just [1] for the one process", got)
 	}
 }
+
+// titleOffset is where the title block sits relative to the middle of
+// its box: the property a reader sees as "centred".
+func titleOffset(t *testing.T, s *layout.Scene) int {
+	t.Helper()
+	box := rects(s)[0]
+	first, last := 1<<30, 0
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok && tx.Role == theme.Title {
+			if tx.Y < first {
+				first = tx.Y
+			}
+			if tx.Y > last {
+				last = tx.Y
+			}
+		}
+	}
+	if last == 0 {
+		t.Fatal("no title in the scene")
+	}
+	return (first+last)/2 - (box.Y + box.H/2)
+}
+
+// Numbering adds a marker in the corner; it must not shift the label.
+func TestNumberingDoesNotMoveTheTitle(t *testing.T) {
+	srcs := map[string]string{
+		"one line":   "[Alpha]\n",
+		"wrapped":    "[A title long enough that it wraps onto several lines inside its box]\n",
+		"two forced": "[First line\n second line]\n",
+	}
+	for _, name := range theme.Names() {
+		th, err := theme.Lookup(name, 13)
+		if err != nil {
+			t.Fatalf("theme: %v", err)
+		}
+		for label, src := range srcs {
+			plain := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, FontSize: 13, Theme: th})
+			numbered := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, FontSize: 13, Theme: th, Number: true})
+			if got, want := titleOffset(t, numbered), titleOffset(t, plain); got != want {
+				t.Errorf("%s/%s: title sits %d from the box centre when numbered, %d when not",
+					name, label, got, want)
+			}
+		}
+	}
+}
