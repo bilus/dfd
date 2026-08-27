@@ -172,6 +172,18 @@ By default ob-dfd runs a `dfd` binary from PATH, falling back to `go run
 github.com/bilus/dfd@latest` when only Go is installed, and erroring
 when neither is. Override with `org-babel-dfd-command`.
 
+## Claude Code skill
+
+[skills/dfd/SKILL.md](skills/dfd/SKILL.md) teaches an agent the syntax and
+flags. Install it by linking it into your skills directory:
+
+```
+ln -s "$PWD/skills/dfd" ~/.claude/skills/dfd
+```
+
+Its examples and flag names are executed by `go test ./cmd/dfd`, so the
+skill cannot drift from the tool.
+
 ## Develop
 
 ```
