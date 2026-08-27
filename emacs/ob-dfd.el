@@ -44,9 +44,14 @@ program; a list gives a program and fixed arguments."
     (:box . "--box")
     (:font-size . "--font-size")
     (:scale . "--scale")
-    (:format . "--format"))
-  "Header argument to the dfd flag it sets.
+    (:format . "--format")
+    (:number-prefix . "--number-prefix"))
+  "Header argument to the dfd flag it sets, for flags taking a value.
 Adding a flag to dfd needs one line here, and nothing else.")
+
+(defconst org-babel-dfd--switches
+  '((:number . "--number"))
+  "Header argument to the dfd flag it turns on, for flags taking none.")
 
 (defconst org-babel-dfd--var-re
   "\\$\\(?:\\(\\$\\)\\|{\\([^}\n]+\\)}\\|\\([A-Za-z_][A-Za-z0-9_-]*\\)\\)"
@@ -60,6 +65,14 @@ Adding a flag to dfd needs one line here, and nothing else.")
    ((executable-find "dfd") (list "dfd"))
    ((executable-find "go") (list "go" "run" "github.com/bilus/dfd@latest"))
    (t (error "dfd: no dfd binary and no go on PATH; install dfd, or set org-babel-dfd-command"))))
+
+(defun org-babel-dfd--on-p (value)
+  "Is VALUE an org header argument meaning yes?"
+  (and value
+       (if (stringp value)
+           (member (downcase value) '("yes" "t" "true"))
+         t)
+       t))
 
 (defun org-babel-dfd--value (name vars)
   "Look NAME up in VARS, an alist from `org-babel--get-vars'."
@@ -97,6 +110,9 @@ ordinary character in every other diagram."
       (let ((value (cdr (assq key params))))
         (when (and value (not (equal value "")))
           (setq args (append args (list flag (format "%s" value)))))))
+    (pcase-dolist (`(,key . ,flag) org-babel-dfd--switches)
+      (when (org-babel-dfd--on-p (cdr (assq key params)))
+        (setq args (append args (list flag)))))
     (let ((extra (cdr (assq :cmdline params))))
       (when (and extra (not (equal extra "")))
         (setq args (append args (split-string-and-unquote (format "%s" extra))))))

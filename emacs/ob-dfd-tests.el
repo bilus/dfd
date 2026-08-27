@@ -122,3 +122,39 @@
 
 (provide 'ob-dfd-tests)
 ;;; ob-dfd-tests.el ends here
+
+(ert-deftest ob-dfd-turns-numbering-on-from-a-header-arg ()
+  (ob-dfd-tests--with-dir
+    (let ((svg (ob-dfd-tests--contents
+                (ob-dfd-tests--render ":number yes" "{Client}\n> req\n[Handle]\n    > row\n    |Users|"))))
+      (should (string-match-p ">1</text>" svg))
+      (should (string-match-p ">D1 Users</text>" svg)))))
+
+(ert-deftest ob-dfd-leaves-numbering-off-by-default ()
+  (ob-dfd-tests--with-dir
+    (let ((svg (ob-dfd-tests--contents
+                (ob-dfd-tests--render "" "[Handle]\n    > row\n    |Users|"))))
+      (should-not (string-match-p ">1</text>" svg))
+      (should (string-match-p ">Users</text>" svg)))))
+
+(ert-deftest ob-dfd-treats-a-negative-switch-as-off ()
+  (ob-dfd-tests--with-dir
+    (let ((svg (ob-dfd-tests--contents
+                (ob-dfd-tests--render ":number no" "[Handle]"))))
+      (should-not (string-match-p ">1</text>" svg)))))
+
+(ert-deftest ob-dfd-passes-the-number-prefix ()
+  (ob-dfd-tests--with-dir
+    (let ((svg (ob-dfd-tests--contents
+                (ob-dfd-tests--render ":number yes :number-prefix \"2.\"" "[Handle]"))))
+      (should (string-match-p ">2\\.1</text>" svg)))))
+
+(ert-deftest ob-dfd-reads-switches-as-emacs-does ()
+  (should (org-babel-dfd--on-p "yes"))
+  (should (org-babel-dfd--on-p "t"))
+  (should (org-babel-dfd--on-p "true"))
+  (should (org-babel-dfd--on-p t))
+  (should-not (org-babel-dfd--on-p "no"))
+  (should-not (org-babel-dfd--on-p "nil"))
+  (should-not (org-babel-dfd--on-p nil))
+  (should-not (org-babel-dfd--on-p "")))

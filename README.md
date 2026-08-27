@@ -131,8 +131,9 @@ Render diagrams from org source blocks with `emacs/ob-dfd.el`:
 
 `:file` is required and its extension picks SVG or PNG. Renderer flags
 have named header arguments (`:theme`, `:per-row`, `:box`, `:font-size`,
-`:scale`, `:format`), with `:cmdline "..."` as an escape hatch for
-anything unmapped. Set them once for a file or subtree with
+`:scale`, `:format`, `:number-prefix`), switches take `yes`/`no`
+(`:number yes`), and `:cmdline "..."` is an escape hatch for anything
+unmapped. Set them once for a file or subtree with
 `#+PROPERTY: header-args:dfd :theme plex`.
 
 Declaring a `:var` turns on substitution of `$name` and `${name}` in the

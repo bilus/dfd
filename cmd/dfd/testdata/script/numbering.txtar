@@ -11,6 +11,10 @@ dfd --number --number-prefix 2. flow.dfd -o levelled.svg
 grep '>2\.1<' levelled.svg
 grep '>2\.2<' levelled.svg
 
+# numbering must survive rasterization too
+dfd --number flow.dfd -o numbered.png
+exists numbered.png
+
 # without the flag nothing is numbered
 dfd flow.dfd -o bare.svg
 ! grep '>1<' bare.svg
