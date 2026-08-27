@@ -63,7 +63,7 @@ Adding a flag to dfd needs one line here, and nothing else.")
    ((stringp org-babel-dfd-command) (list org-babel-dfd-command))
    ((consp org-babel-dfd-command) org-babel-dfd-command)
    ((executable-find "dfd") (list "dfd"))
-   ((executable-find "go") (list "go" "run" "github.com/bilus/dfd@latest"))
+   ((executable-find "go") (list "go" "run" "github.com/bilus/dfd/cmd/dfd@latest"))
    (t (error "dfd: no dfd binary and no go on PATH; install dfd, or set org-babel-dfd-command"))))
 
 (defun org-babel-dfd--on-p (value)

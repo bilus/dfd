@@ -169,7 +169,7 @@ ordinary character everywhere else. The body reaches dfd on stdin, so a
 parse error reports the line within the block.
 
 By default ob-dfd runs a `dfd` binary from PATH, falling back to `go run
-github.com/bilus/dfd@latest` when only Go is installed, and erroring
+github.com/bilus/dfd/cmd/dfd@latest` when only Go is installed, and erroring
 when neither is. Override with `org-babel-dfd-command`.
 
 ## Claude Code skill

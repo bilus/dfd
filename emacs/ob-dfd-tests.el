@@ -91,8 +91,11 @@
 (ert-deftest ob-dfd-falls-back-to-go-run ()
   (let ((org-babel-dfd-command nil))
     (cl-letf (((symbol-function 'executable-find) (ob-dfd-tests--found "go")))
-      (should (equal (org-babel-dfd--command)
-                     '("go" "run" "github.com/bilus/dfd@latest"))))))
+      (let ((cmd (org-babel-dfd--command)))
+        (should (equal (butlast cmd) '("go" "run")))
+        ;; The command lives at cmd/dfd; the module root holds no main
+        ;; package, so a bare module path cannot be run.
+        (should (string-suffix-p "/cmd/dfd@latest" (car (last cmd))))))))
 
 (ert-deftest ob-dfd-errors-when-neither-is-present ()
   (let ((org-babel-dfd-command nil))
@@ -158,3 +161,23 @@
   (should-not (org-babel-dfd--on-p "nil"))
   (should-not (org-babel-dfd--on-p nil))
   (should-not (org-babel-dfd--on-p "")))
+
+(ert-deftest ob-dfd-go-fallback-is-runnable ()
+  "The fallback must name a command that exists, not just a string.
+A string comparison cannot tell a real package path from a wrong one."
+  (skip-unless (executable-find "go"))
+  (let ((cmd (let ((org-babel-dfd-command nil))
+               (cl-letf (((symbol-function 'executable-find) (ob-dfd-tests--found "go")))
+                 (org-babel-dfd--command)))))
+    (ob-dfd-tests--with-dir
+      (let ((src (expand-file-name "in.dfd" ob-dfd-tests--dir))
+            (out (expand-file-name "out.svg" ob-dfd-tests--dir))
+            (err (expand-file-name "err.txt" ob-dfd-tests--dir)))
+        (with-temp-file src (insert "[A]\n"))
+        (let* ((status (apply #'call-process (car cmd) nil (list nil err) nil
+                              (append (cdr cmd) (list src "-o" out))))
+               (stderr (with-temp-buffer (insert-file-contents err) (buffer-string))))
+          (when (string-match-p "dial tcp\\|no such host\\|connection refused\\|i/o timeout\\|certificate" stderr)
+            (ert-skip (concat "cannot reach the module proxy: " stderr)))
+          (should (equal status 0))
+          (should (file-exists-p out)))))))
