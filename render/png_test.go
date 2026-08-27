@@ -13,17 +13,17 @@ func pngScene() *layout.Scene {
 	return &layout.Scene{W: 300, H: 100, FontSize: 13, Items: []layout.Item{
 		layout.Rect{X: 10, Y: 20, W: 160, H: 60},
 		layout.Line{X1: 170, Y1: 50, X2: 250, Y2: 50, Head: true},
-		layout.Line{X1: 10, Y1: 90, X2: 170, Y2: 90, Thick: true},
+		layout.Line{X1: 10, Y1: 90, X2: 170, Y2: 90, Structural: true},
 		layout.Text{X: 90, Y: 55, S: "hello", Anchor: layout.Middle},
 	}}
 }
 
 func TestPNGDeterministicAndScaled(t *testing.T) {
 	var a, b bytes.Buffer
-	if err := render.PNG(pngScene(), 2, &a); err != nil {
+	if err := render.PNG(pngScene(), mustTheme(t), 2, &a); err != nil {
 		t.Fatalf("PNG: %v", err)
 	}
-	if err := render.PNG(pngScene(), 2, &b); err != nil {
+	if err := render.PNG(pngScene(), mustTheme(t), 2, &b); err != nil {
 		t.Fatalf("PNG: %v", err)
 	}
 	if !bytes.Equal(a.Bytes(), b.Bytes()) {

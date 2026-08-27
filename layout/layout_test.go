@@ -6,9 +6,9 @@ import (
 
 	"golang.org/x/image/font"
 
-	"github.com/bilus/dfd/internal/typeface"
 	"github.com/bilus/dfd/layout"
 	"github.com/bilus/dfd/parse"
+	"github.com/bilus/dfd/theme"
 )
 
 func arrange(t *testing.T, src string, c layout.Config) *layout.Scene {
@@ -20,12 +20,8 @@ func arrange(t *testing.T, src string, c layout.Config) *layout.Scene {
 	if c.BoxW == 0 {
 		c.BoxW, c.BoxH, c.MaxWidth, c.FontSize = 160, 60, 1000, 13
 	}
-	if c.Face == nil {
-		face, err := typeface.New(float64(c.FontSize))
-		if err != nil {
-			t.Fatalf("typeface: %v", err)
-		}
-		c.Face = face
+	if c.Theme.Name == "" {
+		c.Theme = defaultTheme(t, c.FontSize)
 	}
 	s, err := layout.Arrange(d, c)
 	if err != nil {
@@ -66,7 +62,7 @@ func TestFlowArrowLabel(t *testing.T) {
 	if got == nil {
 		t.Fatal("flow label not in scene")
 	}
-	want := layout.Text{X: 245, Y: 62, S: "go", Anchor: layout.Middle}
+	want := layout.Text{X: 245, Y: 62, S: "go", Anchor: layout.Middle, Role: theme.Label}
 	if *got != want {
 		t.Errorf("label = %+v, want %+v (gap midpoint, LabelGap above)", *got, want)
 	}
@@ -78,7 +74,7 @@ func TestStoreWriteAboveBox(t *testing.T) {
 	var arrows []layout.Line
 	for _, it := range s.Items {
 		if l, ok := it.(layout.Line); ok {
-			if l.Thick {
+			if l.Structural {
 				thick = append(thick, l)
 			} else if l.Head {
 				arrows = append(arrows, l)
@@ -88,8 +84,8 @@ func TestStoreWriteAboveBox(t *testing.T) {
 	if len(thick) != 2 {
 		t.Fatalf("got %d thick lines, want 2 (store glyph)", len(thick))
 	}
-	upper := layout.Line{X1: 45, Y1: 40, X2: 195, Y2: 40, Thick: true}
-	lower := layout.Line{X1: 45, Y1: 76, X2: 195, Y2: 76, Thick: true}
+	upper := layout.Line{X1: 45, Y1: 40, X2: 195, Y2: 40, Structural: true}
+	lower := layout.Line{X1: 45, Y1: 76, X2: 195, Y2: 76, Structural: true}
 	if thick[0] != upper || thick[1] != lower {
 		t.Errorf("glyph lines = %+v %+v\nwant %+v %+v", thick[0], thick[1], upper, lower)
 	}
@@ -100,8 +96,8 @@ func TestStoreWriteAboveBox(t *testing.T) {
 	if arrows[0] != put {
 		t.Errorf("put arrow = %+v, want %+v (box top up to store)", arrows[0], put)
 	}
-	wantName := layout.Text{X: 120, Y: 62, S: "Database", Anchor: layout.Middle}
-	wantLabel := layout.Text{X: 128, Y: 113, S: "something", Anchor: layout.Start}
+	wantName := layout.Text{X: 120, Y: 62, S: "Database", Anchor: layout.Middle, Role: theme.StoreName}
+	wantLabel := layout.Text{X: 128, Y: 113, S: "something", Anchor: layout.Start, Role: theme.Label}
 	foundName, foundLabel := false, false
 	for _, it := range s.Items {
 		if tx, ok := it.(layout.Text); ok {
@@ -143,7 +139,7 @@ func sceneTexts(s *layout.Scene) map[layout.Text]bool {
 func headArrows(s *layout.Scene) []layout.Line {
 	var out []layout.Line
 	for _, it := range s.Items {
-		if l, ok := it.(layout.Line); ok && l.Head && !l.Thick {
+		if l, ok := it.(layout.Line); ok && l.Head && !l.Structural {
 			out = append(out, l)
 		}
 	}
@@ -163,8 +159,8 @@ func TestStoreReadWriteArrowPair(t *testing.T) {
 	}
 	texts := sceneTexts(s)
 	for _, want := range []layout.Text{
-		{X: 92, Y: 113, S: "input", Anchor: layout.End},
-		{X: 148, Y: 113, S: "record id", Anchor: layout.Start},
+		{X: 92, Y: 113, S: "input", Anchor: layout.End, Role: theme.Label},
+		{X: 148, Y: 113, S: "record id", Anchor: layout.Start, Role: theme.Label},
 	} {
 		if !texts[want] {
 			t.Errorf("missing label %+v", want)
@@ -182,7 +178,7 @@ func TestStoreReadOnlyCenteredArrow(t *testing.T) {
 	if arrows[0] != get {
 		t.Errorf("get arrow = %+v, want %+v (centered, store down to box)", arrows[0], get)
 	}
-	if !sceneTexts(s)[layout.Text{X: 128, Y: 113, S: "rows", Anchor: layout.Start}] {
+	if !sceneTexts(s)[layout.Text{X: 128, Y: 113, S: "rows", Anchor: layout.Start, Role: theme.Label}] {
 		t.Error("missing get label right of centered arrow")
 	}
 }
@@ -191,7 +187,7 @@ func TestMultipleStoresSideBySideWithWidening(t *testing.T) {
 	s := arrange(t, "[Fan out]\n> a\n|Cache|\n> b\n|Queue with long name|\n", layout.Config{})
 	var thick []layout.Line
 	for _, it := range s.Items {
-		if l, ok := it.(layout.Line); ok && l.Thick {
+		if l, ok := it.(layout.Line); ok && l.Structural {
 			thick = append(thick, l)
 		}
 	}
@@ -289,7 +285,7 @@ func TestTurnArrowLabel(t *testing.T) {
 	s := arrange(t, "[One]\n[Two]\n> down\n[Three]\n", layout.Config{
 		BoxW: 160, BoxH: 60, MaxWidth: 1000, PerRow: 2, FontSize: 13,
 	})
-	if !sceneTexts(s)[layout.Text{X: 378, Y: 150, S: "down", Anchor: layout.Start}] {
+	if !sceneTexts(s)[layout.Text{X: 378, Y: 150, S: "down", Anchor: layout.Start, Role: theme.Label}] {
 		t.Error("turn label not right of the vertical arrow")
 	}
 }
@@ -320,7 +316,7 @@ func TestStoreSidesAcrossRows(t *testing.T) {
 	}
 	var thick []layout.Line
 	for _, it := range s.Items {
-		if l, ok := it.(layout.Line); ok && l.Thick {
+		if l, ok := it.(layout.Line); ok && l.Structural {
 			thick = append(thick, l)
 		}
 	}
@@ -350,11 +346,7 @@ func TestPerRowOneStoreHasNoFreeSide(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	face, err := typeface.New(13)
-	if err != nil {
-		t.Fatalf("typeface: %v", err)
-	}
-	_, err = layout.Arrange(d, layout.Config{BoxW: 160, BoxH: 60, PerRow: 1, FontSize: 13, Face: face})
+	_, err = layout.Arrange(d, layout.Config{BoxW: 160, BoxH: 60, PerRow: 1, FontSize: 13, Theme: defaultTheme(t, 13)})
 	if err == nil || !strings.Contains(err.Error(), "no free side") {
 		t.Fatalf("err = %v, want no-free-side error", err)
 	}
@@ -380,8 +372,8 @@ func TestFlowLabelWrapsAtWordBoundaries(t *testing.T) {
 			t.Errorf("label line %q is %dpx, exceeds %d", ln.S, w, layout.HGap-2*layout.LabelPad)
 		}
 	}
-	if lines[0].Y != 62-layout.LineH || lines[1].Y != 62 {
-		t.Errorf("label baselines = %d/%d, want %d/%d (stack grows upward)", lines[0].Y, lines[1].Y, 62-layout.LineH, 62)
+	if lines[0].Y != 62-lineH(t) || lines[1].Y != 62 {
+		t.Errorf("label baselines = %d/%d, want %d/%d (stack grows upward)", lines[0].Y, lines[1].Y, 62-lineH(t), 62)
 	}
 	rs := rects(s)
 	if gap := rs[1].X - (rs[0].X + 160); gap != layout.HGap {
@@ -421,8 +413,8 @@ func TestExplicitTitleBreaks(t *testing.T) {
 	s := arrange(t, "[This is a box\n line 2]\n", layout.Config{})
 	texts := sceneTexts(s)
 	for _, want := range []layout.Text{
-		{X: 120, Y: 67, S: "This is a box", Anchor: layout.Middle},
-		{X: 120, Y: 84, S: "line 2", Anchor: layout.Middle},
+		{X: 120, Y: 67, S: "This is a box", Anchor: layout.Middle, Role: theme.Title},
+		{X: 120, Y: 84, S: "line 2", Anchor: layout.Middle, Role: theme.Title},
 	} {
 		if !texts[want] {
 			t.Errorf("missing title line %+v", want)
@@ -434,8 +426,8 @@ func TestExplicitFlowLabelBreaks(t *testing.T) {
 	s := arrange(t, "[A]\n> line 1\n  line 2\n[B]\n", layout.Config{})
 	texts := sceneTexts(s)
 	for _, want := range []layout.Text{
-		{X: 245, Y: 45, S: "line 1", Anchor: layout.Middle},
-		{X: 245, Y: 62, S: "line 2", Anchor: layout.Middle},
+		{X: 245, Y: 45, S: "line 1", Anchor: layout.Middle, Role: theme.Label},
+		{X: 245, Y: 62, S: "line 2", Anchor: layout.Middle, Role: theme.Label},
 	} {
 		if !texts[want] {
 			t.Errorf("missing flow label line %+v", want)
@@ -447,10 +439,10 @@ func TestExplicitStoreLabelBreaks(t *testing.T) {
 	s := arrange(t, "[A]\n> aaa\n  bbb\n< ccc\n  ddd\n|S|\n", layout.Config{})
 	texts := sceneTexts(s)
 	for _, want := range []layout.Text{
-		{X: 92, Y: 105, S: "aaa", Anchor: layout.End},
-		{X: 92, Y: 122, S: "bbb", Anchor: layout.End},
-		{X: 148, Y: 105, S: "ccc", Anchor: layout.Start},
-		{X: 148, Y: 122, S: "ddd", Anchor: layout.Start},
+		{X: 92, Y: 105, S: "aaa", Anchor: layout.End, Role: theme.Label},
+		{X: 92, Y: 122, S: "bbb", Anchor: layout.End, Role: theme.Label},
+		{X: 148, Y: 105, S: "ccc", Anchor: layout.Start, Role: theme.Label},
+		{X: 148, Y: 122, S: "ddd", Anchor: layout.Start, Role: theme.Label},
 	} {
 		if !texts[want] {
 			t.Errorf("missing store label line %+v", want)
@@ -464,8 +456,8 @@ func TestExplicitTurnLabelBreaks(t *testing.T) {
 	})
 	texts := sceneTexts(s)
 	for _, want := range []layout.Text{
-		{X: 378, Y: 142, S: "down", Anchor: layout.Start},
-		{X: 378, Y: 159, S: "more", Anchor: layout.Start},
+		{X: 378, Y: 142, S: "down", Anchor: layout.Start, Role: theme.Label},
+		{X: 378, Y: 159, S: "more", Anchor: layout.Start, Role: theme.Label},
 	} {
 		if !texts[want] {
 			t.Errorf("missing turn label line %+v", want)
@@ -473,13 +465,24 @@ func TestExplicitTurnLabelBreaks(t *testing.T) {
 	}
 }
 
+func defaultTheme(t *testing.T, base int) theme.Theme {
+	t.Helper()
+	th, err := theme.Lookup("default", base)
+	if err != nil {
+		t.Fatalf("theme: %v", err)
+	}
+	return th
+}
+
 func mustFace(t *testing.T) font.Face {
 	t.Helper()
-	face, err := typeface.New(13)
-	if err != nil {
-		t.Fatalf("typeface: %v", err)
-	}
-	return face
+	return defaultTheme(t, 13).Style(theme.Title).Face
+}
+
+// lineH is the default theme's baseline-to-baseline spacing at 13px.
+func lineH(t *testing.T) int {
+	t.Helper()
+	return defaultTheme(t, 13).Style(theme.Label).LineH()
 }
 
 func TestSingleBoxScene(t *testing.T) {
@@ -495,7 +498,7 @@ func TestSingleBoxScene(t *testing.T) {
 		t.Errorf("rect = %+v, want {40 40 160 60}", s.Items[0])
 	}
 	tx, ok := s.Items[1].(layout.Text)
-	if !ok || tx != (layout.Text{X: 120, Y: 75, S: "Hello", Anchor: layout.Middle}) {
+	if !ok || tx != (layout.Text{X: 120, Y: 75, S: "Hello", Anchor: layout.Middle, Role: theme.Title}) {
 		t.Errorf("text = %+v, want centered baseline at (120,75)", s.Items[1])
 	}
 }

@@ -1,0 +1,12 @@
+# --theme default must be indistinguishable from no flag at all.
+dfd --theme default flow.dfd -o themed.svg
+dfd flow.dfd -o plain.svg
+cmp themed.svg plain.svg
+
+! dfd --theme nope flow.dfd -o out.svg
+stderr 'invalid --theme "nope" \(want default or plex\)'
+
+-- flow.dfd --
+[A]
+> x
+[B]

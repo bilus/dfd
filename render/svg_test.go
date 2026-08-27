@@ -6,12 +6,14 @@ import (
 
 	"github.com/bilus/dfd/layout"
 	"github.com/bilus/dfd/render"
+	"github.com/bilus/dfd/theme"
 )
 
 func TestSVGEmptyScene(t *testing.T) {
 	s := &layout.Scene{W: 100, H: 50, FontSize: 13}
+	th := mustTheme(t)
 	var b strings.Builder
-	if err := render.SVG(s, &b); err != nil {
+	if err := render.SVG(s, th, &b); err != nil {
 		t.Fatalf("SVG: %v", err)
 	}
 	want := `<svg viewBox="0 0 100 50" width="100" height="50" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="13">
@@ -33,8 +35,9 @@ func TestSVGArrowLine(t *testing.T) {
 		layout.Line{X1: 200, Y1: 70, X2: 287, Y2: 70, Head: true},
 		layout.Line{X1: 10, Y1: 10, X2: 20, Y2: 10},
 	}}
+	th := mustTheme(t)
 	var b strings.Builder
-	if err := render.SVG(s, &b); err != nil {
+	if err := render.SVG(s, th, &b); err != nil {
 		t.Fatalf("SVG: %v", err)
 	}
 	out := b.String()
@@ -50,10 +53,11 @@ func TestSVGArrowLine(t *testing.T) {
 
 func TestSVGThickLine(t *testing.T) {
 	s := &layout.Scene{W: 300, H: 100, FontSize: 13, Items: []layout.Item{
-		layout.Line{X1: 45, Y1: 40, X2: 195, Y2: 40, Thick: true},
+		layout.Line{X1: 45, Y1: 40, X2: 195, Y2: 40, Structural: true},
 	}}
+	th := mustTheme(t)
 	var b strings.Builder
-	if err := render.SVG(s, &b); err != nil {
+	if err := render.SVG(s, th, &b); err != nil {
 		t.Fatalf("SVG: %v", err)
 	}
 	out := b.String()
@@ -73,8 +77,9 @@ func TestSVGRectAndText(t *testing.T) {
 		layout.Text{X: 10, Y: 20, S: "left", Anchor: layout.Start},
 		layout.Text{X: 230, Y: 20, S: "right", Anchor: layout.End},
 	}}
+	th := mustTheme(t)
 	var b strings.Builder
-	if err := render.SVG(s, &b); err != nil {
+	if err := render.SVG(s, th, &b); err != nil {
 		t.Fatalf("SVG: %v", err)
 	}
 	out := b.String()
@@ -88,4 +93,13 @@ func TestSVGRectAndText(t *testing.T) {
 			t.Errorf("output missing %q\ngot:\n%s", want, out)
 		}
 	}
+}
+
+func mustTheme(t *testing.T) theme.Theme {
+	t.Helper()
+	th, err := theme.Lookup("default", 13)
+	if err != nil {
+		t.Fatalf("theme: %v", err)
+	}
+	return th
 }

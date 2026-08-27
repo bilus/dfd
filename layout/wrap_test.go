@@ -4,15 +4,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bilus/dfd/internal/typeface"
 	"github.com/bilus/dfd/layout"
+	"github.com/bilus/dfd/theme"
 )
 
 func TestWrapTextSplitsAtWordBoundaries(t *testing.T) {
-	face, err := typeface.New(13)
-	if err != nil {
-		t.Fatalf("typeface: %v", err)
-	}
+	face := mustFace(t)
 	got := layout.WrapText("Change something that doesn't work", 136, face)
 	want := []string{"Change something that", "doesn't work"}
 	if len(got) != len(want) {
@@ -26,10 +23,7 @@ func TestWrapTextSplitsAtWordBoundaries(t *testing.T) {
 }
 
 func TestWrapTextEveryLineFits(t *testing.T) {
-	face, err := typeface.New(13)
-	if err != nil {
-		t.Fatalf("typeface: %v", err)
-	}
+	face := mustFace(t)
 	cases := []string{
 		"short",
 		"a few ordinary words wrapping around",
@@ -52,8 +46,8 @@ func TestWrappedTitleBaselinesAndBoxGrowth(t *testing.T) {
 	s := arrange(t, "[Change something that doesn't work]\n", layout.Config{})
 	texts := sceneTexts(s)
 	for _, want := range []layout.Text{
-		{X: 120, Y: 67, S: "Change something that", Anchor: layout.Middle},
-		{X: 120, Y: 84, S: "doesn't work", Anchor: layout.Middle},
+		{X: 120, Y: 67, S: "Change something that", Anchor: layout.Middle, Role: theme.Title},
+		{X: 120, Y: 84, S: "doesn't work", Anchor: layout.Middle, Role: theme.Title},
 	} {
 		if !texts[want] {
 			t.Errorf("missing title line %+v", want)

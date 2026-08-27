@@ -9,6 +9,7 @@ import (
 	"golang.org/x/image/font"
 
 	"github.com/bilus/dfd/ast"
+	"github.com/bilus/dfd/theme"
 )
 
 // Geometry constants; normative values from the design spec.
@@ -21,7 +22,6 @@ const (
 	LabelPad   = 8  // clearance between a flow label and the boxes beside it
 	LanePad    = 30 // clearance between a store lane and the next row
 	BoxPad     = 12 // padding between box border and title text
-	LineH      = 17 // baseline-to-baseline distance for wrapped titles
 	StoreW     = 150
 	StoreH     = 36 // distance between the two datastore glyph lines
 	StoreArrow = 64 // length of a box<->datastore arrow
@@ -33,7 +33,7 @@ type Config struct {
 	MaxWidth   int
 	PerRow     int // 0 = derive from MaxWidth
 	FontSize   int
-	Face       font.Face // used for all text measurement; required
+	Theme      theme.Theme // paints the scene and measures its text; required
 }
 
 // TextWidth is the advance width of s in whole pixels.
@@ -51,8 +51,11 @@ func storeWidth(l ast.StoreLink, face font.Face) int {
 
 // Arrange lays the diagram out on a grid and returns the display list.
 func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
-	if c.Face == nil {
-		return nil, fmt.Errorf("layout: Config.Face is required")
+	titleSt := c.Theme.Style(theme.Title)
+	labelSt := c.Theme.Style(theme.Label)
+	storeSt := c.Theme.Style(theme.StoreName)
+	if titleSt.Face == nil || labelSt.Face == nil || storeSt.Face == nil {
+		return nil, fmt.Errorf("layout: Config.Theme must supply a face for every role")
 	}
 	s := &Scene{FontSize: c.FontSize}
 	n := len(d.Steps)
@@ -61,8 +64,8 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	titles := make([][]string, n)
 	boxH := c.BoxH
 	for i, st := range d.Steps {
-		titles[i] = WrapSegments(st.Title, c.BoxW-2*BoxPad, c.Face)
-		if h := len(titles[i])*LineH + 2*BoxPad; h > boxH {
+		titles[i] = WrapSegments(st.Title, c.BoxW-2*BoxPad, titleSt.Face)
+		if h := len(titles[i])*titleSt.LineH() + 2*BoxPad; h > boxH {
 			boxH = h
 		}
 	}
@@ -71,7 +74,7 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	// Uniform column width: boxes, widened by the largest store group.
 	colW := c.BoxW
 	for _, st := range d.Steps {
-		if g := groupWidth(st.Stores, c.Face); g > colW {
+		if g := groupWidth(st.Stores, storeSt.Face); g > colW {
 			colW = g
 		}
 	}
@@ -83,7 +86,7 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	gapW := HGap
 	for _, st := range d.Steps {
 		for _, w := range strings.Fields(st.In) {
-			if need := TextWidth(w, c.Face) + 2*LabelPad; need > gapW {
+			if need := TextWidth(w, labelSt.Face) + 2*LabelPad; need > gapW {
 				gapW = need
 			}
 		}
@@ -188,9 +191,9 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 		x, by := boxX(i), rowY[r]
 		cy := by + c.BoxH/2
 		s.Items = append(s.Items, Rect{X: x, Y: by, W: c.BoxW, H: c.BoxH})
-		first := cy + 5 - (len(titles[i])-1)*LineH/2
+		first := cy + 5 - (len(titles[i])-1)*titleSt.LineH()/2
 		for j, ln := range titles[i] {
-			s.Items = append(s.Items, Text{X: x + c.BoxW/2, Y: first + j*LineH, S: ln, Anchor: Middle})
+			s.Items = append(s.Items, Text{X: x + c.BoxW/2, Y: first + j*titleSt.LineH(), S: ln, Anchor: Middle, Role: theme.Title})
 		}
 		if i > 0 {
 			if pr := (i - 1) / perRow; pr == r {
@@ -203,11 +206,11 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 				}
 				s.Items = append(s.Items, Line{X1: x1, Y1: cy, X2: x2, Y2: cy, Head: true})
 				if st.In != "" {
-					lines := WrapSegments(st.In, gapW-2*LabelPad, c.Face)
+					lines := WrapSegments(st.In, gapW-2*LabelPad, labelSt.Face)
 					mid := (fromX + x + c.BoxW) / 2
 					for j, ln := range lines {
-						y := cy - LabelGap - (len(lines)-1-j)*LineH
-						s.Items = append(s.Items, Text{X: mid, Y: y, S: ln, Anchor: Middle})
+						y := cy - LabelGap - (len(lines)-1-j)*labelSt.LineH()
+						s.Items = append(s.Items, Text{X: mid, Y: y, S: ln, Anchor: Middle, Role: theme.Label})
 					}
 				}
 			} else { // snake turn: vertical arrow into this row's first box
@@ -215,14 +218,14 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 				fromY := rowY[pr] + c.BoxH
 				s.Items = append(s.Items, Line{X1: tx, Y1: fromY, X2: tx, Y2: by - Inset, Head: true})
 				if st.In != "" {
-					emitLabelLines(s, st.In, tx+LabelGap, (fromY+by)/2+5, Start)
+					emitLabelLines(s, st.In, tx+LabelGap, (fromY+by)/2+5, Start, labelSt)
 				}
 			}
 		}
 		if len(st.Stores) > 0 {
-			sx := x + c.BoxW/2 - groupWidth(st.Stores, c.Face)/2
+			sx := x + c.BoxW/2 - groupWidth(st.Stores, storeSt.Face)/2
 			for _, l := range st.Stores {
-				sw := storeWidth(l, c.Face)
+				sw := storeWidth(l, storeSt.Face)
 				emitStore(s, l, sx, sw, x, by, side[i], c)
 				sx += sw + StoreGap
 			}
@@ -235,11 +238,11 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 
 // emitLabelLines draws a label's explicit "\n" segments as a stack of
 // lines vertically centered on the baseline y.
-func emitLabelLines(s *Scene, label string, x, y int, anchor Anchor) {
+func emitLabelLines(s *Scene, label string, x, y int, anchor Anchor, st theme.Style) {
 	lines := strings.Split(label, "\n")
-	first := y - (len(lines)-1)*LineH/2
+	first := y - (len(lines)-1)*st.LineH()/2
 	for j, ln := range lines {
-		s.Items = append(s.Items, Text{X: x, Y: first + j*LineH, S: ln, Anchor: anchor})
+		s.Items = append(s.Items, Text{X: x, Y: first + j*st.LineH(), S: ln, Anchor: anchor, Role: theme.Label})
 	}
 }
 
@@ -261,6 +264,8 @@ func groupWidth(links []ast.StoreLink, face font.Face) int {
 // follow the glyph center but are clamped into the box span so arrows
 // always leave the box.
 func emitStore(s *Scene, l ast.StoreLink, sx, sw, bx, by, side int, c Config) {
+	nameSt := c.Theme.Style(theme.StoreName)
+	labelSt := c.Theme.Style(theme.Label)
 	cx := sx + sw/2
 	// near = glyph line facing the box; upper = the glyph's top line.
 	var near, upper, boxEdge int
@@ -275,9 +280,9 @@ func emitStore(s *Scene, l ast.StoreLink, sx, sw, bx, by, side int, c Config) {
 	}
 	lower := upper + StoreH
 	s.Items = append(s.Items,
-		Line{X1: sx, Y1: upper, X2: sx + sw, Y2: upper, Thick: true},
-		Line{X1: sx, Y1: lower, X2: sx + sw, Y2: lower, Thick: true},
-		Text{X: cx, Y: upper + (StoreH+c.FontSize)/2 - 2, S: l.Name, Anchor: Middle},
+		Line{X1: sx, Y1: upper, X2: sx + sw, Y2: upper, Structural: true},
+		Line{X1: sx, Y1: lower, X2: sx + sw, Y2: lower, Structural: true},
+		Text{X: cx, Y: upper + (StoreH+int(nameSt.Size))/2 - 2, S: l.Name, Anchor: Middle, Role: theme.StoreName},
 	)
 	clamp := func(v int) int {
 		if min := bx + 20; v < min {
@@ -303,16 +308,16 @@ func emitStore(s *Scene, l ast.StoreLink, sx, sw, bx, by, side int, c Config) {
 		s.Items = append(s.Items, Line{X1: putX, Y1: boxEdge, X2: putX, Y2: near + dir*Inset, Head: true})
 		if l.Put.Label != "" {
 			if l.Get != nil { // get's label takes the right side
-				emitLabelLines(s, l.Put.Label, putX-LabelGap, labelY, End)
+				emitLabelLines(s, l.Put.Label, putX-LabelGap, labelY, End, labelSt)
 			} else {
-				emitLabelLines(s, l.Put.Label, putX+LabelGap, labelY, Start)
+				emitLabelLines(s, l.Put.Label, putX+LabelGap, labelY, Start, labelSt)
 			}
 		}
 	}
 	if l.Get != nil {
 		s.Items = append(s.Items, Line{X1: getX, Y1: near, X2: getX, Y2: boxEdge - dir*Inset, Head: true})
 		if l.Get.Label != "" {
-			emitLabelLines(s, l.Get.Label, getX+LabelGap, labelY, Start)
+			emitLabelLines(s, l.Get.Label, getX+LabelGap, labelY, Start, labelSt)
 		}
 	}
 }
@@ -328,11 +333,11 @@ type Item interface{ item() }
 type Rect struct{ X, Y, W, H int }
 
 // Line is a straight segment. Head draws an arrowhead at (X2,Y2).
-// Thick marks 2px structural strokes (datastore glyph lines) versus
-// 1.5px arrow strokes.
+// Structural marks the datastore glyph lines, which a theme strokes
+// differently from arrows.
 type Line struct {
-	X1, Y1, X2, Y2 int
-	Head, Thick    bool
+	X1, Y1, X2, Y2   int
+	Head, Structural bool
 }
 
 type Anchor int
@@ -343,11 +348,13 @@ const (
 	End
 )
 
-// Text is a single line of text; Y is the baseline.
+// Text is a single line of text; Y is the baseline. Role selects the
+// typography a theme paints it with.
 type Text struct {
 	X, Y   int
 	S      string
 	Anchor Anchor
+	Role   theme.Role
 }
 
 func (Rect) item() {}

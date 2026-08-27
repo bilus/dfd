@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bilus/dfd/internal/typeface"
 	"github.com/bilus/dfd/layout"
 	"github.com/bilus/dfd/parse"
 	"github.com/bilus/dfd/render"
+	"github.com/bilus/dfd/theme"
 )
 
 const Version = "0.1.0"
@@ -25,6 +25,7 @@ type options struct {
 	perRow   int
 	fontSize int
 	scale    float64
+	theme    string
 	version  bool
 	input    string // positional; "" = stdin
 }
@@ -40,6 +41,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs.IntVar(&o.perRow, "per-row", 0, "fixed boxes per row (overrides --max-width)")
 	fs.IntVar(&o.fontSize, "font-size", 13, "label font size")
 	fs.Float64Var(&o.scale, "scale", 2, "PNG resolution multiplier")
+	fs.StringVar(&o.theme, "theme", "default", "visual theme: "+strings.Join(theme.Names(), " or "))
 	fs.BoolVar(&o.version, "version", false, "print version")
 	// Accept flags both before and after the positional input path.
 	var positionals []string
@@ -97,14 +99,14 @@ func run(o options, stdin io.Reader, stdout io.Writer) (err error) {
 	if _, err := fmt.Sscanf(o.box, "%dx%d", &boxW, &boxH); err != nil {
 		return fmt.Errorf("dfd: invalid --box %q (want WxH)", o.box)
 	}
-	face, err := typeface.New(float64(o.fontSize))
+	th, err := theme.Lookup(o.theme, o.fontSize)
 	if err != nil {
-		return err
+		return fmt.Errorf("dfd: invalid --theme %q (want %s)", o.theme, strings.Join(theme.Names(), " or "))
 	}
 	scene, err := layout.Arrange(d, layout.Config{
 		BoxW: boxW, BoxH: boxH,
 		MaxWidth: o.maxWidth, PerRow: o.perRow,
-		FontSize: o.fontSize, Face: face,
+		FontSize: o.fontSize, Theme: th,
 	})
 	if err != nil {
 		return err
@@ -115,9 +117,9 @@ func run(o options, stdin io.Reader, stdout io.Writer) (err error) {
 	}
 	draw := func(w io.Writer) error {
 		if format == "png" {
-			return render.PNG(scene, o.scale, w)
+			return render.PNG(scene, th, o.scale, w)
 		}
-		return render.SVG(scene, w)
+		return render.SVG(scene, th, w)
 	}
 	if outPath == "" {
 		return draw(stdout)
