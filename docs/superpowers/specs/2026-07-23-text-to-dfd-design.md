@@ -154,7 +154,7 @@ implemented renderer (visually reviewed), not from the hand-made file.
 | Store arrow length | 64px | —            | Vertical, between box edge and near store line. |
 | Column gap     | 90px    | —             | Horizontal space between boxes; holds flow labels. |
 | Base row gap   | 90px    | —             | Grows when stores occupy the gap.        |
-| Canvas margin  | 40px    | —             | White background, both formats.          |
+| Canvas margin  | 40px    | —             | White background, both formats. The canvas grows past the grid when an arrow label overhangs a column, keeping both margins equal. |
 | PNG scale      | 2       | `--scale`     | Resolution multiplier.                   |
 
 ### Placement rules
@@ -209,8 +209,9 @@ primitives (rects, lines with optional arrowheads, anchored text runs) with a
 computed canvas size. All decisions are deterministic.
 
 1. **Columns.** Uniform column width = max over steps of (box width, widest
-   store group). Boxes-per-row = `--per-row` if given, else the largest n such
-   that `2·margin + n·colW + (n−1)·hGap ≤ --max-width` (default 1000), min 1.
+   store group). Boxes-per-row = `--per-row`, default 4. It is a fixed count,
+   not a pixel budget, so a theme that draws wider gaps does not change how
+   many boxes a row holds.
 2. **Snake.** Step i goes to row `i / perRow`. Even rows run left-to-right,
    odd rows right-to-left, so a row's first step sits directly under the
    previous row's last step; that pair is joined by the vertical turn arrow.
@@ -218,7 +219,7 @@ computed canvas size. All decisions are deterministic.
    above for middle rows. If the preferred side's anchor is occupied by a turn
    arrow (a row-first box's top, a row-last box's bottom), use the other side.
    If both are occupied (only possible when perRow is 1), fail with an error
-   suggesting a larger `--max-width`/`--per-row`.
+   suggesting a larger `--per-row`.
 4. **Vertical spacing.** Each inter-row gap and outer margin grows to fit what
    it contains: turn arrows need the base gap; each store lane adds store
    height + store arrow length. Stores in the same gap from adjacent rows
@@ -290,8 +291,7 @@ dfd [flags] [input.dfd]
   -o out.svg|.png   explicit output; format from extension; "-" = stdout
   --format svg|png  override format detection (required for PNG on stdout)
   --box WxH         box size (default 160x60)
-  --max-width N     target canvas width for auto-snake (default 1000)
-  --per-row N       fixed boxes per row (overrides --max-width)
+  --per-row N       boxes per row (default 4)
   --font-size N     label font size (default 13)
   --scale N         PNG resolution multiplier (default 2)
   --version

@@ -1,0 +1,111 @@
+# Six boxes wrap 4 + 2 in both themes: the column count is fixed, not
+# derived from how wide a theme happens to draw things.
+dfd flow.dfd -o plain.svg
+cmp plain.svg want-plain.svg
+
+dfd --theme plex flow.dfd -o plex.svg
+cmp plex.svg want-plex.svg
+
+dfd --per-row 2 flow.dfd -o narrow.svg
+cmp narrow.svg want-narrow.svg
+
+-- flow.dfd --
+[One]
+> page id, mountFn, tree
+[Two]
+[Three]
+[Four]
+[Five]
+[Six]
+-- want-plain.svg --
+<svg viewBox="0 0 990 290" width="990" height="290" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0L10,5L0,10z" fill="#000"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="990" height="290" fill="#fff"/>
+  <rect x="40" y="40" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="120" y="75" fill="#000" text-anchor="middle">One</text>
+  <rect x="290" y="40" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="370" y="75" fill="#000" text-anchor="middle">Two</text>
+  <line x1="200" y1="70" x2="287" y2="70" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="245" y="28" fill="#000" text-anchor="middle">page id,</text>
+  <text x="245" y="45" fill="#000" text-anchor="middle">mountFn,</text>
+  <text x="245" y="62" fill="#000" text-anchor="middle">tree</text>
+  <rect x="540" y="40" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="620" y="75" fill="#000" text-anchor="middle">Three</text>
+  <line x1="450" y1="70" x2="537" y2="70" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <rect x="790" y="40" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="870" y="75" fill="#000" text-anchor="middle">Four</text>
+  <line x1="700" y1="70" x2="787" y2="70" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <rect x="790" y="190" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="870" y="225" fill="#000" text-anchor="middle">Five</text>
+  <line x1="870" y1="100" x2="870" y2="187" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <rect x="540" y="190" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="620" y="225" fill="#000" text-anchor="middle">Six</text>
+  <line x1="790" y1="220" x2="703" y2="220" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+</svg>
+-- want-plex.svg --
+<svg viewBox="0 0 1365 290" width="1365" height="290" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, Helvetica Neue, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0L10,5L0,10z" fill="#63489E"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1365" height="290" fill="#F2F4F6"/>
+  <rect x="40" y="40" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="40" y="44" width="3" height="52" fill="#63489E"/>
+  <text x="120" y="75" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">One</text>
+  <rect x="415" y="40" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="415" y="44" width="3" height="52" fill="#63489E"/>
+  <text x="495" y="75" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Two</text>
+  <line x1="200" y1="70" x2="412" y2="70" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="220" y="58" width="175" height="24" rx="3" fill="#F2F4F6"/>
+  <text x="307" y="74" fill="#63489E" text-anchor="middle" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">page id, mountFn, tree</text>
+  <rect x="790" y="40" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="790" y="44" width="3" height="52" fill="#63489E"/>
+  <text x="870" y="75" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Three</text>
+  <line x1="575" y1="70" x2="787" y2="70" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="1165" y="40" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="1165" y="44" width="3" height="52" fill="#63489E"/>
+  <text x="1245" y="75" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Four</text>
+  <line x1="950" y1="70" x2="1162" y2="70" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="1165" y="190" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="1165" y="194" width="3" height="52" fill="#63489E"/>
+  <text x="1245" y="225" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Five</text>
+  <line x1="1245" y1="100" x2="1245" y2="187" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="790" y="190" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <rect x="790" y="194" width="3" height="52" fill="#63489E"/>
+  <text x="870" y="225" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Six</text>
+  <line x1="1165" y1="220" x2="953" y2="220" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+</svg>
+-- want-narrow.svg --
+<svg viewBox="0 0 490 440" width="490" height="440" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0L10,5L0,10z" fill="#000"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="490" height="440" fill="#fff"/>
+  <rect x="40" y="40" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="120" y="75" fill="#000" text-anchor="middle">One</text>
+  <rect x="290" y="40" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="370" y="75" fill="#000" text-anchor="middle">Two</text>
+  <line x1="200" y1="70" x2="287" y2="70" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="245" y="28" fill="#000" text-anchor="middle">page id,</text>
+  <text x="245" y="45" fill="#000" text-anchor="middle">mountFn,</text>
+  <text x="245" y="62" fill="#000" text-anchor="middle">tree</text>
+  <rect x="290" y="190" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="370" y="225" fill="#000" text-anchor="middle">Three</text>
+  <line x1="370" y1="100" x2="370" y2="187" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <rect x="40" y="190" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="120" y="225" fill="#000" text-anchor="middle">Four</text>
+  <line x1="290" y1="220" x2="203" y2="220" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <rect x="40" y="340" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="120" y="375" fill="#000" text-anchor="middle">Five</text>
+  <line x1="120" y1="250" x2="120" y2="337" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+  <rect x="290" y="340" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="370" y="375" fill="#000" text-anchor="middle">Six</text>
+  <line x1="200" y1="370" x2="287" y2="370" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
+</svg>

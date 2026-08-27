@@ -21,7 +21,6 @@ type options struct {
 	out      string
 	format   string
 	box      string
-	maxWidth int
 	perRow   int
 	fontSize int
 	scale    float64
@@ -37,8 +36,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs.StringVar(&o.out, "o", "", "output file (.svg/.png); \"-\" = stdout")
 	fs.StringVar(&o.format, "format", "", "svg or png; overrides -o extension")
 	fs.StringVar(&o.box, "box", "160x60", "box size WxH")
-	fs.IntVar(&o.maxWidth, "max-width", 1000, "target canvas width")
-	fs.IntVar(&o.perRow, "per-row", 0, "fixed boxes per row (overrides --max-width)")
+	fs.IntVar(&o.perRow, "per-row", layout.DefaultPerRow, "boxes per row")
 	fs.IntVar(&o.fontSize, "font-size", 13, "label font size")
 	fs.Float64Var(&o.scale, "scale", 2, "PNG resolution multiplier")
 	fs.StringVar(&o.theme, "theme", "default", "visual theme: "+strings.Join(theme.Names(), " or "))
@@ -105,7 +103,7 @@ func run(o options, stdin io.Reader, stdout io.Writer) (err error) {
 	}
 	scene, err := layout.Arrange(d, layout.Config{
 		BoxW: boxW, BoxH: boxH,
-		MaxWidth: o.maxWidth, PerRow: o.perRow,
+		PerRow:   o.perRow,
 		FontSize: o.fontSize, Theme: th,
 	})
 	if err != nil {

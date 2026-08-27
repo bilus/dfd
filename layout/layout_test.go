@@ -18,7 +18,7 @@ func arrange(t *testing.T, src string, c layout.Config) *layout.Scene {
 		t.Fatalf("parse: %v", err)
 	}
 	if c.BoxW == 0 {
-		c.BoxW, c.BoxH, c.MaxWidth, c.FontSize = 160, 60, 1000, 13
+		c.BoxW, c.BoxH, c.FontSize = 160, 60, 13
 	}
 	if c.Theme.Name == "" {
 		c.Theme = defaultTheme(t, c.FontSize)
@@ -240,7 +240,7 @@ func rects(s *layout.Scene) []layout.Rect {
 
 func TestSnakeRowsAndTurns(t *testing.T) {
 	s := arrange(t, "[One]\n[Two]\n[Three]\n[Four]\n[Five]\n", layout.Config{
-		BoxW: 160, BoxH: 60, MaxWidth: 700, FontSize: 13,
+		BoxW: 160, BoxH: 60, PerRow: 2, FontSize: 13,
 	})
 	rs := rects(s)
 	if len(rs) != 5 {
@@ -283,7 +283,7 @@ func TestSnakeRowsAndTurns(t *testing.T) {
 
 func TestTurnArrowLabel(t *testing.T) {
 	s := arrange(t, "[One]\n[Two]\n> down\n[Three]\n", layout.Config{
-		BoxW: 160, BoxH: 60, MaxWidth: 1000, PerRow: 2, FontSize: 13,
+		BoxW: 160, BoxH: 60, PerRow: 2, FontSize: 13,
 	})
 	if !sceneTexts(s)[layout.Text{X: 378, Y: 150, S: "down", Anchor: layout.Start, Role: theme.Label}] {
 		t.Error("turn label not right of the vertical arrow")
@@ -304,7 +304,7 @@ func TestStoreSidesAcrossRows(t *testing.T) {
 |SE|
 [F]
 `
-	s := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, MaxWidth: 1000, PerRow: 2, FontSize: 13})
+	s := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, PerRow: 2, FontSize: 13})
 	rs := rects(s)
 	if len(rs) != 6 {
 		t.Fatalf("got %d rects, want 6", len(rs))
@@ -452,7 +452,7 @@ func TestExplicitStoreLabelBreaks(t *testing.T) {
 
 func TestExplicitTurnLabelBreaks(t *testing.T) {
 	s := arrange(t, "[One]\n[Two]\n> down\n  more\n[Three]\n", layout.Config{
-		BoxW: 160, BoxH: 60, MaxWidth: 1000, PerRow: 2, FontSize: 13,
+		BoxW: 160, BoxH: 60, PerRow: 2, FontSize: 13,
 	})
 	texts := sceneTexts(s)
 	for _, want := range []layout.Text{
@@ -515,7 +515,7 @@ func plexTheme(t *testing.T, base int) theme.Theme {
 func TestPlexCentresFlowLabelsOnTheArrow(t *testing.T) {
 	th := plexTheme(t, 13)
 	s := arrange(t, "[A]\n> go\n[B]\n", layout.Config{
-		BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th,
+		BoxW: 160, BoxH: 60, FontSize: 13, Theme: th,
 	})
 	var got *layout.Text
 	for _, it := range s.Items {
@@ -542,7 +542,7 @@ func TestPlexCentresFlowLabelsOnTheArrow(t *testing.T) {
 func TestPlexCentresTurnLabelsOnTheArrow(t *testing.T) {
 	th := plexTheme(t, 13)
 	s := arrange(t, "[One]\n[Two]\n> down\n[Three]\n", layout.Config{
-		BoxW: 160, BoxH: 60, MaxWidth: 1000, PerRow: 2, FontSize: 13, Theme: th,
+		BoxW: 160, BoxH: 60, PerRow: 2, FontSize: 13, Theme: th,
 	})
 	var turn layout.Line
 	for _, l := range headArrows(s) {
@@ -580,7 +580,7 @@ func TestDefaultKeepsLabelsBesideTheArrow(t *testing.T) {
 func TestPlexGapLeavesArrowVisibleAroundTheChip(t *testing.T) {
 	th := plexTheme(t, 13)
 	s := arrange(t, "[A]\n> record id\n[B]\n", layout.Config{
-		BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th,
+		BoxW: 160, BoxH: 60, FontSize: 13, Theme: th,
 	})
 	rs := rects(s)
 	gap := rs[1].X - (rs[0].X + 160)
@@ -594,7 +594,7 @@ func TestPlexGapLeavesArrowVisibleAroundTheChip(t *testing.T) {
 func TestPlexKeepsALabelOnOneLine(t *testing.T) {
 	th := plexTheme(t, 13)
 	s := arrange(t, "[A]\n> config, server node\n[B]\n", layout.Config{
-		BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th,
+		BoxW: 160, BoxH: 60, FontSize: 13, Theme: th,
 	})
 	n := 0
 	for _, it := range s.Items {
@@ -610,7 +610,7 @@ func TestPlexKeepsALabelOnOneLine(t *testing.T) {
 func TestPlexHonoursExplicitLabelBreaks(t *testing.T) {
 	th := plexTheme(t, 13)
 	s := arrange(t, "[A]\n> one\n  two\n[B]\n", layout.Config{
-		BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th,
+		BoxW: 160, BoxH: 60, FontSize: 13, Theme: th,
 	})
 	var got []string
 	for _, it := range s.Items {
@@ -662,14 +662,14 @@ func assertNothingClipped(t *testing.T, s *layout.Scene, th theme.Theme) {
 func TestStoreLabelInLastColumnWidensTheCanvas(t *testing.T) {
 	th := plexTheme(t, 13)
 	s := arrange(t, "[Start]\n> go\n[Register live page]\n    > page id, mountFn, tree\n    |Registry|\n",
-		layout.Config{BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th})
+		layout.Config{BoxW: 160, BoxH: 60, FontSize: 13, Theme: th})
 	assertNothingClipped(t, s, th)
 }
 
 func TestStoreLabelOverhangingTheLeftShiftsTheDiagram(t *testing.T) {
 	th := plexTheme(t, 13)
 	s := arrange(t, "[A]\n> a considerably long put label\n< out\n|S|\n",
-		layout.Config{BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th})
+		layout.Config{BoxW: 160, BoxH: 60, FontSize: 13, Theme: th})
 	assertNothingClipped(t, s, th)
 	if rs := rects(s); rs[0].X <= layout.Margin {
 		t.Errorf("box x = %d; a label overhanging the left edge must push the diagram right", rs[0].X)
@@ -689,7 +689,7 @@ func TestNothingIsClippedAcrossThemes(t *testing.T) {
 			if err != nil {
 				t.Fatalf("theme: %v", err)
 			}
-			s := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, MaxWidth: 700, FontSize: 13, Theme: th})
+			s := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, FontSize: 13, Theme: th})
 			t.Run(name+"/"+string(rune('a'+i)), func(t *testing.T) {
 				assertNothingClipped(t, s, th)
 			})
@@ -700,7 +700,7 @@ func TestNothingIsClippedAcrossThemes(t *testing.T) {
 func TestMarginsStaySymmetricWhenTheCanvasGrows(t *testing.T) {
 	th := plexTheme(t, 13)
 	s := arrange(t, "[Start]\n> go\n[Register live page]\n    > page id, mountFn, tree\n    |Registry|\n",
-		layout.Config{BoxW: 160, BoxH: 60, MaxWidth: 1000, FontSize: 13, Theme: th})
+		layout.Config{BoxW: 160, BoxH: 60, FontSize: 13, Theme: th})
 	lo, hi := s.W, 0
 	for _, it := range s.Items {
 		if tx, ok := it.(layout.Text); ok {
@@ -713,5 +713,44 @@ func TestMarginsStaySymmetricWhenTheCanvasGrows(t *testing.T) {
 	}
 	if left, right := lo, s.W-hi; left != right {
 		t.Errorf("margins are %d left and %d right; growing the canvas must keep them equal", left, right)
+	}
+}
+
+func boxesInFirstRow(s *layout.Scene) int {
+	rs := rects(s)
+	if len(rs) == 0 {
+		return 0
+	}
+	n := 0
+	for _, r := range rs {
+		if r.Y == rs[0].Y {
+			n++
+		}
+	}
+	return n
+}
+
+func TestDefaultIsFourColumnsWhateverTheTheme(t *testing.T) {
+	// A label wide enough to stretch plex's column gaps: the column
+	// count must not depend on how wide a theme draws things.
+	const src = "[One]\n> page id, mountFn, tree\n[Two]\n[Three]\n[Four]\n[Five]\n[Six]\n"
+	for _, name := range theme.Names() {
+		th, err := theme.Lookup(name, 13)
+		if err != nil {
+			t.Fatalf("theme: %v", err)
+		}
+		s := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, FontSize: 13, Theme: th})
+		if got := boxesInFirstRow(s); got != layout.DefaultPerRow {
+			t.Errorf("theme %q put %d boxes in the first row, want %d", name, got, layout.DefaultPerRow)
+		}
+	}
+}
+
+func TestPerRowOverridesTheDefault(t *testing.T) {
+	s := arrange(t, "[One]\n[Two]\n[Three]\n[Four]\n[Five]\n", layout.Config{
+		BoxW: 160, BoxH: 60, FontSize: 13, PerRow: 3,
+	})
+	if got := boxesInFirstRow(s); got != 3 {
+		t.Errorf("got %d boxes in the first row, want 3", got)
 	}
 }

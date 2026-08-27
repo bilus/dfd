@@ -32,7 +32,7 @@ That picture is this text ([examples/original.dfd](examples/original.dfd)):
 rendered with:
 
 ```
-dfd --max-width 1100 examples/original.dfd -o examples/original.png
+dfd examples/original.dfd -o examples/original.png
 ```
 
 Other ways to run it:
@@ -52,7 +52,7 @@ their connector:
 ![The same diagram in the plex theme](examples/original-plex.png)
 
 ```
-dfd --theme plex --max-width 1100 examples/original.dfd -o out.png
+dfd --theme plex examples/original.dfd -o out.png
 ```
 
 Themes change measurement as well as paint, so the two layouts differ:
@@ -76,7 +76,10 @@ so PNG output is identical everywhere with no fonts installed.
   arrow label on the next line — each source line renders as one line
 
 Layout is automatic: boxes snake left-to-right then right-to-left across
-rows, datastores sit above or below their process, long titles wrap.
+rows of `--per-row` boxes (4 by default), datastores sit above or below
+their process, and long titles wrap. The row width is a fixed count
+rather than a pixel budget, so a diagram keeps its shape when you switch
+theme.
 
 ## Flags
 
@@ -84,8 +87,7 @@ rows, datastores sit above or below their process, long titles wrap.
 -o out.svg|.png   output file; format from extension; "-" = stdout
 --format svg|png  override format detection
 --box WxH         box size (default 160x60)
---max-width N     target canvas width for row wrapping (default 1000)
---per-row N       fixed boxes per row (overrides --max-width)
+--per-row N       boxes per row (default 4)
 --font-size N     label font size (default 13)
 --scale N         PNG resolution multiplier (default 2)
 --theme NAME      default or plex

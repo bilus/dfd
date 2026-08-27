@@ -1,4 +1,4 @@
-dfd --max-width 700 flow.dfd -o flow.svg
+dfd --per-row 2 flow.dfd -o flow.svg
 cmp flow.svg want.svg
 
 -- flow.dfd --

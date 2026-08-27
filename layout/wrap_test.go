@@ -59,7 +59,7 @@ func TestWrappedTitleBaselinesAndBoxGrowth(t *testing.T) {
 	}
 
 	small := arrange(t, "[Change something that doesn't work]\n", layout.Config{
-		BoxW: 160, BoxH: 40, MaxWidth: 1000, FontSize: 13,
+		BoxW: 160, BoxH: 40, FontSize: 13,
 	})
 	rs = rects(small)
 	if want := 2*17 + 2*layout.BoxPad; rs[0].H != want {

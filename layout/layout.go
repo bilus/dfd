@@ -29,10 +29,14 @@ const (
 	StoreGap   = 20 // between side-by-side datastore glyphs
 )
 
+// DefaultPerRow is how many boxes a row holds when Config.PerRow is
+// unset. It is a fixed count rather than a width budget so that the
+// shape of a diagram does not change with the theme.
+const DefaultPerRow = 4
+
 type Config struct {
 	BoxW, BoxH int
-	MaxWidth   int
-	PerRow     int // 0 = derive from MaxWidth
+	PerRow     int // boxes per row; 0 = DefaultPerRow
 	FontSize   int
 	Theme      theme.Theme // paints the scene and measures its text; required
 }
@@ -103,10 +107,7 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 
 	perRow := c.PerRow
 	if perRow <= 0 {
-		perRow = 1
-		for 2*Margin+(perRow+1)*colW+perRow*gapW <= c.MaxWidth {
-			perRow++
-		}
+		perRow = DefaultPerRow
 	}
 	nRows := (n + perRow - 1) / perRow
 
@@ -147,7 +148,7 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 			pref = 1
 		}
 		if (pref == 1 && topBusy) || (pref == -1 && bottomBusy) {
-			return nil, fmt.Errorf("layout: step %q has no free side for its datastores; increase --max-width or --per-row", st.Title)
+			return nil, fmt.Errorf("layout: step %q has no free side for its datastores; raise --per-row", st.Title)
 		}
 		side[i] = pref
 	}
