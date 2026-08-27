@@ -27,6 +27,7 @@ type options struct {
 	theme    string
 	number   bool
 	prefix   string
+	bg       string
 	version  bool
 	input    string // positional; "" = stdin
 }
@@ -42,6 +43,7 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs.IntVar(&o.fontSize, "font-size", 13, "label font size")
 	fs.Float64Var(&o.scale, "scale", 2, "PNG resolution multiplier")
 	fs.StringVar(&o.theme, "theme", "default", "visual theme: "+strings.Join(theme.Names(), " or "))
+	fs.StringVar(&o.bg, "background", "", "page colour as hex, e.g. ffffff (default: the theme's)")
 	fs.BoolVar(&o.number, "number", false, "number processes 1, 2, 3 and datastores D1, D2")
 	fs.StringVar(&o.prefix, "number-prefix", "", "prefix for process numbers, e.g. \"2.\" for a levelled diagram")
 	fs.BoolVar(&o.version, "version", false, "print version")
@@ -104,6 +106,13 @@ func run(o options, stdin io.Reader, stdout io.Writer) (err error) {
 	th, err := theme.Lookup(o.theme, o.fontSize)
 	if err != nil {
 		return fmt.Errorf("dfd: invalid --theme %q (want %s)", o.theme, strings.Join(theme.Names(), " or "))
+	}
+	if o.bg != "" {
+		c, err := theme.Color(o.bg)
+		if err != nil {
+			return fmt.Errorf("dfd: invalid --background %q (%v)", o.bg, err)
+		}
+		th.Canvas = c
 	}
 	scene, err := layout.Arrange(d, layout.Config{
 		BoxW: boxW, BoxH: boxH,

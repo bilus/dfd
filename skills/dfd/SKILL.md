@@ -67,6 +67,7 @@ the flags with one dash; Go accepts either, and this page uses two.
 | `--number-prefix 2.` | Levels the process numbers to 2.1, 2.2 for a child diagram. |
 | `--per-row N` | Boxes per row before the flow snakes back (default 4). |
 | `--box WxH`, `--font-size N`, `--scale N` | Box size, text size, PNG resolution. |
+| `--background HEX` | Page colour, e.g. `ffffff`. Repaints the page, not the boxes. |
 | `--format svg\|png` | Overrides the format the `-o` extension implies. |
 | `--version` | Prints the version. |
 

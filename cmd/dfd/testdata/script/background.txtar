@@ -1,0 +1,28 @@
+# --background repaints the page. Label chips mask the connector with
+# the page colour, so they have to follow it.
+dfd --background ffcc00 flow.dfd -o plain.svg
+grep '<rect x="0" y="0" width="\d+" height="\d+" fill="#ffcc00"/>' plain.svg
+
+dfd --theme plex --background ffcc00 flow.dfd -o plex.svg
+grep 'rx="3" fill="#ffcc00"' plex.svg
+
+# a hash and the three-digit form are both accepted
+dfd --background '#ffcc00' flow.dfd -o hash.svg
+cmp hash.svg plain.svg
+dfd --background fc0 flow.dfd -o short.svg
+grep 'fill="#fc0"' short.svg
+
+# it reaches the raster too
+dfd --background ffcc00 flow.dfd -o out.png
+exists out.png
+
+! dfd --background nothex flow.dfd -o bad.svg
+stderr 'invalid --background "nothex"'
+
+! dfd --background ffff flow.dfd -o bad.svg
+stderr 'invalid --background "ffff"'
+
+-- flow.dfd --
+[A]
+> some label
+[B]

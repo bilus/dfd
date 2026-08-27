@@ -99,3 +99,28 @@ func TestNames(t *testing.T) {
 		t.Errorf("Names() = %q, want default,plex in that order", got)
 	}
 }
+
+func TestColor(t *testing.T) {
+	ok := map[string]string{
+		"ffffff":  "#ffffff",
+		"#ffffff": "#ffffff",
+		"FFCC00":  "#ffcc00",
+		"fc0":     "#fc0",
+		"#FC0":    "#fc0",
+	}
+	for in, want := range ok {
+		got, err := theme.Color(in)
+		if err != nil {
+			t.Errorf("Color(%q): %v", in, err)
+			continue
+		}
+		if got != want {
+			t.Errorf("Color(%q) = %q, want %q", in, got, want)
+		}
+	}
+	for _, bad := range []string{"", "nothex", "ffff", "#", "#12345", "ggg", "ffffff ", "0x123456"} {
+		if got, err := theme.Color(bad); err == nil {
+			t.Errorf("Color(%q) = %q, want an error", bad, got)
+		}
+	}
+}

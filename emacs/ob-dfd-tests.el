@@ -181,3 +181,9 @@ A string comparison cannot tell a real package path from a wrong one."
             (ert-skip (concat "cannot reach the module proxy: " stderr)))
           (should (equal status 0))
           (should (file-exists-p out)))))))
+
+(ert-deftest ob-dfd-passes-the-background ()
+  (ob-dfd-tests--with-dir
+    (let ((svg (ob-dfd-tests--contents
+                (ob-dfd-tests--render ":background ffcc00" "[A]"))))
+      (should (string-match-p "fill=\"#ffcc00\"" svg)))))

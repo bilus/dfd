@@ -105,6 +105,22 @@ func Roles() []Role {
 	return out
 }
 
+// Color normalises a hex colour as written on the command line into the
+// form the renderers emit: a leading hash and lower case, three or six
+// digits. It is the one place that decides what counts as a colour.
+func Color(s string) (string, error) {
+	digits := strings.TrimPrefix(s, "#")
+	if len(digits) != 3 && len(digits) != 6 {
+		return "", fmt.Errorf("want a hex colour like ffffff or fff")
+	}
+	for _, r := range digits {
+		if !strings.ContainsRune("0123456789abcdefABCDEF", r) {
+			return "", fmt.Errorf("want a hex colour like ffffff or fff")
+		}
+	}
+	return "#" + strings.ToLower(digits), nil
+}
+
 // Names lists the available themes, in the order they are offered.
 func Names() []string { return []string{"default", "plex"} }
 

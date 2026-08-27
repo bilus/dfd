@@ -45,7 +45,8 @@ program; a list gives a program and fixed arguments."
     (:font-size . "--font-size")
     (:scale . "--scale")
     (:format . "--format")
-    (:number-prefix . "--number-prefix"))
+    (:number-prefix . "--number-prefix")
+    (:background . "--background"))
   "Header argument to the dfd flag it sets, for flags taking a value.
 Adding a flag to dfd needs one line here, and nothing else.")
 

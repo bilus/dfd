@@ -96,9 +96,15 @@ theme.
 --font-size N     label font size (default 13)
 --scale N         PNG resolution multiplier (default 2)
 --theme NAME      default or plex
+--background HEX  page colour, e.g. ffffff (default: the theme's)
 --number          number processes 1, 2, 3 and datastores D1, D2
 --number-prefix P prefix process numbers, e.g. "2." for 2.1, 2.2
 ```
+
+`--background` takes a hex colour with or without a leading hash, three
+or six digits. It repaints the page only, not the boxes, and label chips
+follow it since they mask the connector with the page colour. Handy for
+putting a plex diagram on white.
 
 `--number` is off by default. It numbers processes in flow order and
 datastores D1, D2, skipping external entities, which is the DFD
@@ -149,7 +155,7 @@ Render diagrams from org source blocks with `emacs/ob-dfd.el`:
 
 `:file` is required and its extension picks SVG or PNG. Renderer flags
 have named header arguments (`:theme`, `:per-row`, `:box`, `:font-size`,
-`:scale`, `:format`, `:number-prefix`), switches take `yes`/`no`
+`:scale`, `:format`, `:number-prefix`, `:background`), switches take `yes`/`no`
 (`:number yes`), and `:cmdline "..."` is an escape hatch for anything
 unmapped. Set them once for a file or subtree with
 `#+PROPERTY: header-args:dfd :theme plex`.

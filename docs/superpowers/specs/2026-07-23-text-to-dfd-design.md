@@ -359,6 +359,7 @@ dfd [flags] [input.dfd]
   --format svg|png  override format detection (required for PNG on stdout)
   --box WxH         box size (default 160x60)
   --per-row N       boxes per row (default 4)
+  --background HEX  page colour, e.g. ffffff; overrides the theme's
   --font-size N     label font size (default 13)
   --scale N         PNG resolution multiplier (default 2)
   --version
