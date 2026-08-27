@@ -67,6 +67,8 @@ the flags with one dash; Go accepts either, and this page uses two.
 | `--number-prefix 2.` | Levels the process numbers to 2.1, 2.2 for a child diagram. |
 | `--per-row N` | Boxes per row before the flow snakes back (default 4). |
 | `--box WxH`, `--font-size N`, `--scale N` | Box size, text size, PNG resolution. |
+| `--format svg\|png` | Overrides the format the `-o` extension implies. |
+| `--version` | Prints the version. |
 
 ## Identity
 
@@ -111,6 +113,6 @@ substitution in the body.
 | `<` before a process | Error. Return arrows only precede a datastore. |
 | A datastore under `{Entity}` | Error. Data cannot flow straight between an entity and a store; put a process between them. |
 | Expecting a branch | There is none. Split into several diagrams. |
-| Expecting a reply from an external system | There is no return arrow from `{Entity}`; `<` only precedes a datastore. A call that answers back is drawn as the flow passing through the entity and on to the next process. Model a true round trip as two diagrams, or accept the pass-through reading. |
+| Expecting a reply from an external system | There is no return arrow from `{Entity}`; `<` only precedes a datastore. A call that answers back is drawn as the flow passing through the entity and on to the next process. Model a true round trip as two diagrams, or accept the pass-through reading. One service that calls out and then carries on becomes two boxes with two numbers, since the flow cannot return to the first. |
 | A datastore name over two lines | Error. Only processes and entities span lines. |
 | Very long arrow labels | They wrap at word boundaries. One unbreakable word widens every column gap, so keep labels short or break them yourself. |
