@@ -104,8 +104,8 @@ theme.
 datastores D1, D2, skipping external entities, which is the DFD
 convention. A numbered box carries a small compartment at the top,
 divided by a rule, holding the number; entities get neither. Nodes are
-identified by their label, so one that appears
-more than once keeps the number it was first given:
+identified by their label, so one appearing more than once keeps the
+number it was first given:
 
 ```
 [Register user]
@@ -115,9 +115,11 @@ more than once keeps the number it was first given:
 [Confirm]
     < row
     |R|          # the same store: still D1, still drawn as Registration
-``` Each theme draws an entity in its own idiom: the default
-theme uses the shadowed Gane-Sarson terminator, plex the dashed grey
-outline it already uses for things outside the system.
+```
+
+Each theme draws an entity in its own idiom: the default theme uses the
+shadowed Gane-Sarson terminator, plex the dashed grey outline it already
+uses for things outside the system.
 
 Full syntax, error catalogue, and rendering rules:
 [docs/superpowers/specs/2026-07-23-text-to-dfd-design.md](docs/superpowers/specs/2026-07-23-text-to-dfd-design.md).
