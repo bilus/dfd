@@ -99,12 +99,61 @@ The examples above are also checked in as SVG:
 [examples/original.svg](examples/original.svg) and
 [examples/original-plex.svg](examples/original-plex.svg).
 
+## Emacs org-babel
+
+Render diagrams from org source blocks with `emacs/ob-dfd.el`:
+
+```elisp
+(add-to-list 'load-path "/path/to/dfd/emacs")
+(require 'ob-dfd)
+(org-babel-do-load-languages 'org-babel-load-languages '((dfd . t)))
+```
+
+```org
+#+begin_src dfd :file flow.svg :theme plex :per-row 3
+[Start container/process]
+> config, server node
+[Start workspace agent]
+> agent node
+[Connect to cluster]
+#+end_src
+```
+
+`:file` is required and its extension picks SVG or PNG. Renderer flags
+have named header arguments (`:theme`, `:per-row`, `:box`, `:font-size`,
+`:scale`, `:format`), with `:cmdline "..."` as an escape hatch for
+anything unmapped. Set them once for a file or subtree with
+`#+PROPERTY: header-args:dfd :theme plex`.
+
+Declaring a `:var` turns on substitution of `$name` and `${name}` in the
+block body, with `$$` for a literal `$`:
+
+```org
+#+begin_src dfd :file registry.svg :var svc="workspace agent" :var db="Registry"
+[Start $svc]
+    > page id
+    < mountFn
+    |${db}|
+> ready
+[Serve]
+#+end_src
+```
+
+Blocks without a `:var` are passed through untouched, so `$` is an
+ordinary character everywhere else. The body reaches dfd on stdin, so a
+parse error reports the line within the block.
+
+By default ob-dfd runs a `dfd` binary from PATH, falling back to `go run
+github.com/bilus/dfd@latest` when only Go is installed, and erroring
+when neither is. Override with `org-babel-dfd-command`.
+
 ## Develop
 
 ```
 go test ./...                                # all tests
 go test ./cmd/dfd -run TestScript -update    # reseed txtar fixtures after an
                                              # intentional rendering change
+./emacs/run-tests.sh                         # the ob-dfd elisp suite alone
 ```
 
 Acceptance tests live in `cmd/dfd/testdata/script/*.txtar` (testscript);
