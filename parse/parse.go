@@ -32,10 +32,12 @@ type arrowLine struct {
 	label string
 }
 
-// openBracket is a [process] whose closing bracket has not appeared
-// yet; each source line becomes one rendered title line.
+// openBracket is a [process] or {entity} whose closing bracket has not
+// appeared yet; each source line becomes one rendered title line.
 type openBracket struct {
 	start int
+	close byte
+	kind  ast.Kind
 	parts []string
 }
 
@@ -48,8 +50,11 @@ func Parse(r io.Reader, name string) (*ast.Diagram, error) {
 	var open *openBracket
 	canCont := false // the previous line was an arrow or its continuation
 
-	appendStep := func(title string, n int) error {
+	appendStep := func(title string, kind ast.Kind, n int) error {
 		if strings.TrimSpace(title) == "" {
+			if kind == ast.Entity {
+				return errf(n, "empty external entity name")
+			}
 			return errf(n, "empty process name")
 		}
 		in, err := bindFlow(steps, pending, errf)
@@ -57,7 +62,7 @@ func Parse(r io.Reader, name string) (*ast.Diagram, error) {
 			return err
 		}
 		pending = nil
-		steps = append(steps, ast.Step{Title: title, In: in})
+		steps = append(steps, ast.Step{Title: title, Kind: kind, In: in})
 		return nil
 	}
 
@@ -67,13 +72,13 @@ func Parse(r io.Reader, name string) (*ast.Diagram, error) {
 		n++
 		line := strings.TrimSpace(strings.TrimSuffix(sc.Text(), "\r"))
 		if open != nil {
-			frag, closed, err := scanFragment(line, ']', n, errf)
+			frag, closed, err := scanFragment(line, open.close, n, errf)
 			if err != nil {
 				return nil, err
 			}
 			open.parts = append(open.parts, frag)
 			if closed {
-				if err := appendStep(strings.Join(open.parts, "\n"), n); err != nil {
+				if err := appendStep(strings.Join(open.parts, "\n"), open.kind, n); err != nil {
 					return nil, err
 				}
 				open = nil
@@ -83,17 +88,21 @@ func Parse(r io.Reader, name string) (*ast.Diagram, error) {
 		switch {
 		case line == "" || strings.HasPrefix(line, "#"):
 			canCont = false
-		case strings.HasPrefix(line, "["):
+		case strings.HasPrefix(line, "[") || strings.HasPrefix(line, "{"):
 			canCont = false
-			frag, closed, err := scanFragment(line[1:], ']', n, errf)
+			kind, close := ast.Process, byte(']')
+			if line[0] == '{' {
+				kind, close = ast.Entity, '}'
+			}
+			frag, closed, err := scanFragment(line[1:], close, n, errf)
 			if err != nil {
 				return nil, err
 			}
 			if !closed {
-				open = &openBracket{start: n, parts: []string{frag}}
+				open = &openBracket{start: n, close: close, kind: kind, parts: []string{frag}}
 				continue
 			}
-			if err := appendStep(frag, n); err != nil {
+			if err := appendStep(frag, kind, n); err != nil {
 				return nil, err
 			}
 		case strings.HasPrefix(line, "|"):
@@ -129,14 +138,14 @@ func Parse(r io.Reader, name string) (*ast.Diagram, error) {
 				pending[len(pending)-1].label += "\n" + line
 				continue
 			}
-			return nil, errf(n, "unrecognized line; expected [process], |store|, > or < arrow, or # comment")
+			return nil, errf(n, "unrecognized line; expected [process], {entity}, |store|, > or < arrow, or # comment")
 		}
 	}
 	if err := sc.Err(); err != nil {
 		return nil, fmt.Errorf("%s: %w", name, err)
 	}
 	if open != nil {
-		return nil, errf(open.start, "missing closing %q", "]")
+		return nil, errf(open.start, "missing closing %q", string(open.close))
 	}
 	if len(pending) > 0 {
 		if len(steps) == 0 {

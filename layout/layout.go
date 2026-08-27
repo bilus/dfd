@@ -208,7 +208,7 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 		r := i / perRow
 		x, by := boxX(i), rowY[r]
 		cy := by + c.BoxH/2
-		s.Items = append(s.Items, Rect{X: x, Y: by, W: c.BoxW, H: c.BoxH})
+		s.Items = append(s.Items, Rect{X: x, Y: by, W: c.BoxW, H: c.BoxH, Entity: st.Kind == ast.Entity})
 		first := cy + 5 - (len(titles[i])-1)*titleSt.LineH()/2
 		for j, ln := range titles[i] {
 			s.Items = append(s.Items, Text{X: x + c.BoxW/2, Y: first + j*titleSt.LineH(), S: ln, Anchor: Middle, Role: theme.Title})
@@ -437,7 +437,12 @@ type Scene struct {
 
 type Item interface{ item() }
 
-type Rect struct{ X, Y, W, H int }
+// Rect is a box. Entity marks an external source or sink, which a
+// theme draws differently from a process.
+type Rect struct {
+	X, Y, W, H int
+	Entity     bool
+}
 
 // Line is a straight segment. Head draws an arrowhead at (X2,Y2).
 // Structural marks the datastore glyph lines, which a theme strokes

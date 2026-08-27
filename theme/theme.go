@@ -70,6 +70,15 @@ type Theme struct {
 	ArrowStrokeW float64
 	ArrowHead    int // arrowhead marker size
 
+	// External entities are drawn in each theme's own idiom: a
+	// shadowed box where boxes are solid, a dashed outline where the
+	// theme already says "outside the system" that way.
+	EntityFill   string
+	EntityStroke string
+	EntityDash   string // stroke-dasharray, "" = solid
+	EntityShadow int    // drop-shadow offset, 0 = none
+	EntityAccent bool   // draw the accent bar on an entity
+
 	// LabelOnLine centres flow and turn labels on their arrow rather
 	// than setting them beside it; LabelChip then masks the line where
 	// the text crosses it.
@@ -117,6 +126,10 @@ func newDefault(base int) (Theme, error) {
 		ArrowColor:    "#000",
 		ArrowStrokeW:  1.5,
 		ArrowHead:     8,
+		EntityFill:    "#fff",
+		EntityStroke:  "#000",
+		EntityShadow:  6,
+		EntityAccent:  true,
 	}
 	t.styles = [numRoles]Style{Title: st, Label: st, StoreName: st}
 	return t, nil
@@ -159,6 +172,10 @@ func newPlex(base int) (Theme, error) {
 		ArrowColor:    violet,
 		ArrowStrokeW:  1.4,
 		ArrowHead:     7,
+		EntityFill:    "none",
+		EntityStroke:  "#8A94A0",
+		EntityDash:    "5 4",
+		EntityAccent:  false,
 		LabelOnLine:   true,
 		LabelChip:     true,
 	}

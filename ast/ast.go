@@ -4,6 +4,15 @@ package ast
 
 import "fmt"
 
+// Kind is what a step depicts. The zero value is a process, so a step
+// built without naming a kind is one.
+type Kind int
+
+const (
+	Process Kind = iota
+	Entity       // an external source or sink, outside the system
+)
+
 // Diagram is a linear flow. Construct with New so invariants hold.
 type Diagram struct{ Steps []Step }
 
@@ -12,6 +21,7 @@ type Diagram struct{ Steps []Step }
 // empty there.
 type Step struct {
 	Title  string
+	Kind   Kind
 	In     string
 	Stores []StoreLink
 }
@@ -33,6 +43,11 @@ func New(steps []Step) (*Diagram, error) {
 		return nil, fmt.Errorf("arrow has no source process")
 	}
 	for _, s := range steps {
+		// A flow may not run straight between an external entity and a
+		// datastore; it has to pass through a process.
+		if s.Kind == Entity && len(s.Stores) > 0 {
+			return nil, fmt.Errorf("external entity %q cannot own a datastore; put a process between them", s.Title)
+		}
 		for _, l := range s.Stores {
 			if l.Put == nil && l.Get == nil {
 				return nil, fmt.Errorf("datastore %q has no arrows", l.Name)

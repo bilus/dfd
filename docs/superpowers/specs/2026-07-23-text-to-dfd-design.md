@@ -116,7 +116,7 @@ All reported as `file:line: message` (see CLI section). The complete list:
 | Missing closing `]` / `\|`                            | missing closing ']'                                        |
 | Text after closing bracket                            | unexpected text after ']'                                  |
 | Empty name (`[]`, `\|\|`)                             | empty process/datastore name                               |
-| Unrecognizable line                                   | unrecognized line; expected [process], \|store\|, > or < arrow, or # comment |
+| Unrecognizable line                                   | unrecognized line; expected [process], {entity}, \|store\|, > or < arrow, or # comment |
 
 ### Examples
 

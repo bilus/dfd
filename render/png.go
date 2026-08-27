@@ -3,6 +3,8 @@ package render
 import (
 	"io"
 	"math"
+	"strconv"
+	"strings"
 
 	"github.com/fogleman/gg"
 	"golang.org/x/image/font"
@@ -25,9 +27,19 @@ func PNG(s *layout.Scene, th theme.Theme, scale float64, w io.Writer) error {
 	for _, it := range s.Items {
 		switch v := it.(type) {
 		case layout.Rect:
+			fill, stroke := th.BoxFill, th.BoxStroke
+			if v.Entity {
+				fill, stroke = th.EntityFill, th.EntityStroke
+				if th.EntityShadow > 0 {
+					fillStroke(dc, px(v.X+th.EntityShadow), px(v.Y+th.EntityShadow), px(v.W), px(v.H),
+						float64(th.BoxRadius)*scale, fill, stroke, th.BoxStrokeW*scale)
+				}
+				dc.SetDash(dashPattern(th.EntityDash, scale)...)
+			}
 			fillStroke(dc, px(v.X), px(v.Y), px(v.W), px(v.H), float64(th.BoxRadius)*scale,
-				th.BoxFill, th.BoxStroke, th.BoxStrokeW*scale)
-			if th.AccentW > 0 {
+				fill, stroke, th.BoxStrokeW*scale)
+			dc.SetDash()
+			if th.AccentW > 0 && (!v.Entity || th.EntityAccent) {
 				ay, ah := insetAccent(v, th)
 				dc.SetHexColor(th.AccentColor)
 				dc.DrawRectangle(px(v.X), px(ay), px(th.AccentW), px(ah))
@@ -80,6 +92,19 @@ func scaledFaces(th theme.Theme, scale float64) (map[theme.Role]font.Face, error
 	return out, nil
 }
 
+// dashPattern turns an SVG stroke-dasharray into gg dash lengths.
+func dashPattern(dash string, scale float64) []float64 {
+	var out []float64
+	for _, f := range strings.Fields(dash) {
+		v, err := strconv.ParseFloat(f, 64)
+		if err != nil {
+			return nil
+		}
+		out = append(out, v*scale)
+	}
+	return out
+}
+
 // fillStroke paints a rectangle, rounding its corners when r > 0 and
 // stroking it when a stroke colour is given.
 func fillStroke(dc *gg.Context, x, y, w, h, r float64, fill, stroke string, width float64) {
@@ -87,6 +112,12 @@ func fillStroke(dc *gg.Context, x, y, w, h, r float64, fill, stroke string, widt
 		dc.DrawRoundedRectangle(x, y, w, h, r)
 	} else {
 		dc.DrawRectangle(x, y, w, h)
+	}
+	if fill == "none" {
+		dc.SetLineWidth(width)
+		dc.SetHexColor(stroke)
+		dc.Stroke()
+		return
 	}
 	dc.SetHexColor(fill)
 	if stroke == "" {

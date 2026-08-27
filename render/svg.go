@@ -24,9 +24,17 @@ func SVG(s *layout.Scene, th theme.Theme, w io.Writer) error {
 	for _, it := range s.Items {
 		switch v := it.(type) {
 		case layout.Rect:
-			p.f(`  <rect x="%d" y="%d" width="%d" height="%d"%s fill="%s" stroke="%s" stroke-width="%s"/>`+"\n",
-				v.X, v.Y, v.W, v.H, radius(th), th.BoxFill, th.BoxStroke, num(th.BoxStrokeW))
-			if th.AccentW > 0 {
+			fill, stroke, dash := th.BoxFill, th.BoxStroke, ""
+			if v.Entity {
+				fill, stroke, dash = th.EntityFill, th.EntityStroke, th.EntityDash
+				if th.EntityShadow > 0 {
+					p.f(`  <rect x="%d" y="%d" width="%d" height="%d"%s fill="%s" stroke="%s" stroke-width="%s"/>`+"\n",
+						v.X+th.EntityShadow, v.Y+th.EntityShadow, v.W, v.H, radius(th), fill, stroke, num(th.BoxStrokeW))
+				}
+			}
+			p.f(`  <rect x="%d" y="%d" width="%d" height="%d"%s fill="%s" stroke="%s" stroke-width="%s"%s/>`+"\n",
+				v.X, v.Y, v.W, v.H, radius(th), fill, stroke, num(th.BoxStrokeW), dashAttr(dash))
+			if th.AccentW > 0 && (!v.Entity || th.EntityAccent) {
 				y, h := insetAccent(v, th)
 				p.f(`  <rect x="%d" y="%d" width="%d" height="%d" fill="%s"/>`+"\n",
 					v.X, y, th.AccentW, h, th.AccentColor)
@@ -82,6 +90,13 @@ func num(f float64) string { return strconv.FormatFloat(f, 'g', -1, 64) }
 // inside the box outline instead of poking past the rounded corners.
 func insetAccent(r layout.Rect, th theme.Theme) (y, h int) {
 	return r.Y + th.BoxRadius, r.H - 2*th.BoxRadius
+}
+
+func dashAttr(dash string) string {
+	if dash == "" {
+		return ""
+	}
+	return fmt.Sprintf(` stroke-dasharray="%s"`, dash)
 }
 
 func radius(th theme.Theme) string {

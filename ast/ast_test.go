@@ -46,3 +46,31 @@ func TestNewStoreLink(t *testing.T) {
 		t.Fatalf("unexpected link: %+v", l)
 	}
 }
+
+func TestStepKind(t *testing.T) {
+	d, err := ast.New([]ast.Step{
+		{Title: "Client", Kind: ast.Entity},
+		{Title: "Handle", In: "req"},
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if d.Steps[0].Kind != ast.Entity {
+		t.Error("entity kind lost")
+	}
+	if d.Steps[1].Kind != ast.Process {
+		t.Error("the zero kind must be Process, so existing callers stay right")
+	}
+}
+
+func TestNewRejectsAStoreOnAnEntity(t *testing.T) {
+	put := &ast.Arrow{Label: "x"}
+	_, err := ast.New([]ast.Step{{
+		Title:  "Client",
+		Kind:   ast.Entity,
+		Stores: []ast.StoreLink{{Name: "S", Put: put}},
+	}})
+	if err == nil {
+		t.Fatal("want error: data cannot flow between an external entity and a datastore")
+	}
+}
