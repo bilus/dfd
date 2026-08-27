@@ -174,6 +174,32 @@ implemented renderer (visually reviewed), not from the hand-made file.
   padding); a single overlong word breaks mid-word. Store names and arrow
   labels never wrap.
 
+## Themes
+
+`--theme` selects one of two painting recipes. `default` is the original
+black-on-white look and is byte-for-byte unchanged by the theme layer.
+`plex` uses a #F2F4F6 canvas, #FFFFFF boxes with a 1.25 #12161A outline
+and 4px corners, a 3px #63489E accent bar inset by the corner radius on
+each box's left edge, 1.4 violet arrows with 7px heads, IBM Plex Sans
+SemiBold titles at base+2, and IBM Plex Mono arrow labels at base-1.
+
+Scene text carries a role (title, arrow label, datastore name) and a
+theme styles each one separately. Because layout measures with the
+theme's faces, a theme can move things as well as recolour them:
+
+- `LabelOnLine` (plex only) centres flow and turn labels on their arrow
+  instead of setting them beside it, and `LabelChip` masks the line
+  behind the text with a canvas-coloured rounded rect.
+- Labels drawn on a line are never auto-wrapped. The column gap instead
+  grows to `label width + 2*ChipPadX + 2*LabelStub` so the chip cannot
+  swallow the arrowhead. Explicit line breaks remain the way to shorten
+  a long label under that theme.
+
+Every face is embedded in the binary (Go Regular for `default`, IBM Plex
+for `plex`, the latter under the SIL Open Font License 1.1), so neither
+measurement nor PNG output depends on installed system fonts. SVG names
+the font stack and leaves substitution to the viewer.
+
 ## Layout algorithm
 
 Input: `ast.Diagram` + config. Output: `layout.Scene`, a display list of
