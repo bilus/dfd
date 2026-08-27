@@ -1,7 +1,7 @@
 # dfd — text-to-DFD diagram CLI: design
 
-Date: 2026-07-23
-Status: approved design, pre-implementation
+Date: 2026-07-23 (themes added 2026-08-27)
+Status: implemented
 
 ## Overview
 
@@ -26,7 +26,9 @@ its source.
 ## Non-goals (v1)
 
 - Branching or arbitrary graphs. The flow is strictly one linear sequence.
-- Styling: themes, colors, custom fonts, rounded corners.
+- Arbitrary styling: user-defined colours or fonts. Themes are a closed
+  set (see Themes below); `--theme` picks one, nothing is configurable
+  past that.
 - Layout hints in the syntax (store side, row breaks). Layout is fully automatic.
 - Merging datastore symbols across different processes (same name = separate symbols).
 - Config files, watch mode, editor integrations, Mermaid/DOT import or export.
