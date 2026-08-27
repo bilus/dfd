@@ -975,11 +975,9 @@ func TestEntitiesRepeatWithoutTakingNumbers(t *testing.T) {
 	}
 }
 
-// titleOffset is where the title block sits relative to the middle of
-// its box: the property a reader sees as "centred".
-func titleOffset(t *testing.T, s *layout.Scene) int {
+// titleMid is the middle of the title block.
+func titleMid(t *testing.T, s *layout.Scene) int {
 	t.Helper()
-	box := rects(s)[0]
 	first, last := 1<<30, 0
 	for _, it := range s.Items {
 		if tx, ok := it.(layout.Text); ok && tx.Role == theme.Title {
@@ -994,27 +992,81 @@ func titleOffset(t *testing.T, s *layout.Scene) int {
 	if last == 0 {
 		t.Fatal("no title in the scene")
 	}
-	return (first+last)/2 - (box.Y + box.H/2)
+	return (first + last) / 2
 }
 
-// Numbering adds a marker in the corner; it must not shift the label.
-func TestNumberingDoesNotMoveTheTitle(t *testing.T) {
-	srcs := map[string]string{
-		"one line":   "[Alpha]\n",
-		"wrapped":    "[A title long enough that it wraps onto several lines inside its box]\n",
-		"two forced": "[First line\n second line]\n",
-	}
+// Option C: the number gets its own compartment at the top of the box,
+// divided by a rule, and the title centres in what is left. The number
+// and the title cannot overlap however the title wraps.
+func TestNumberBandSeparatesTheNumberFromTheTitle(t *testing.T) {
+	const wide = "[Wrap component in container]\n" // wraps to the full box width
 	for _, name := range theme.Names() {
 		th, err := theme.Lookup(name, 13)
 		if err != nil {
 			t.Fatalf("theme: %v", err)
 		}
-		for label, src := range srcs {
+		s := arrange(t, wide, layout.Config{
+			BoxW: 160, BoxH: 60, FontSize: 13, Theme: th, Number: true, NumberPrefix: "1.",
+		})
+		box := rects(s)[0]
+		if box.Band <= 0 {
+			t.Fatalf("%s: numbered box has no band", name)
+		}
+		rule := box.Y + box.Band
+		var num layout.Text
+		firstTitle := 1 << 30
+		for _, it := range s.Items {
+			tx, ok := it.(layout.Text)
+			if !ok {
+				continue
+			}
+			switch tx.Role {
+			case theme.Number:
+				num = tx
+			case theme.Title:
+				if tx.Y < firstTitle {
+					firstTitle = tx.Y
+				}
+			}
+		}
+		if num.S == "" {
+			t.Fatalf("%s: no number drawn", name)
+		}
+		if num.Y <= box.Y || num.Y > rule {
+			t.Errorf("%s: number baseline %d is not inside the band %d..%d", name, num.Y, box.Y, rule)
+		}
+		// The title's own line box has to start below the rule.
+		if top := firstTitle - th.Style(theme.Title).LineH(); top < rule {
+			t.Errorf("%s: title starts at %d, above the rule at %d; it would run through the number",
+				name, top, rule)
+		}
+	}
+}
+
+func TestNoBandWhenNumberingIsOff(t *testing.T) {
+	s := arrange(t, "[Wrap component in container]\n", layout.Config{})
+	if box := rects(s)[0]; box.Band != 0 {
+		t.Errorf("band = %d with numbering off, want none", box.Band)
+	}
+}
+
+// Within its compartment the title is centred exactly as it is centred
+// in a plain box, so numbering does not look like a nudge.
+func TestTitleCentresInItsCompartment(t *testing.T) {
+	for _, name := range theme.Names() {
+		th, err := theme.Lookup(name, 13)
+		if err != nil {
+			t.Fatalf("theme: %v", err)
+		}
+		for _, src := range []string{"[Alpha]\n", "[Wrap component in container]\n"} {
 			plain := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, FontSize: 13, Theme: th})
 			numbered := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, FontSize: 13, Theme: th, Number: true})
-			if got, want := titleOffset(t, numbered), titleOffset(t, plain); got != want {
-				t.Errorf("%s/%s: title sits %d from the box centre when numbered, %d when not",
-					name, label, got, want)
+			pb, nb := rects(plain)[0], rects(numbered)[0]
+			want := titleMid(t, plain) - (pb.Y + pb.H/2)
+			got := titleMid(t, numbered) - (nb.Y + nb.Band + (nb.H-nb.Band)/2)
+			if got != want {
+				t.Errorf("%s %q: title sits %d from its compartment centre, %d from a plain box centre",
+					name, src, got, want)
 			}
 		}
 	}

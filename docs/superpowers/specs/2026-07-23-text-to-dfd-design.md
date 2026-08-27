@@ -207,8 +207,11 @@ everything after it is label. Write `\:=` for a literal marker.
 `--number` (off by default) numbers processes 1, 2, 3 in flow order and
 datastores D1, D2, skipping entities. `--number-prefix 2.` levels the
 process numbers to 2.1, 2.2; datastores stay D1, D2 whatever the level.
-A number sits top-left inside its box in a band, and the title centres
-below that band, so the two can never collide however the title wraps.
+A numbered box carries a compartment at the top, `number line height + 6`
+deep, divided from the rest by a rule in the theme's `BandRule` colour.
+The number sits left-aligned in it and the title centres in what is
+left, so the two cannot collide however the title wraps. External
+entities take no number and get neither band nor rule.
 A datastore's number prefixes its name, which widens the glyph through
 the existing measurement.
 

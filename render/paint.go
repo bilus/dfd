@@ -31,6 +31,9 @@ func paint(s *layout.Scene, th theme.Theme, c canvas) {
 				}
 			}
 			c.Rect(v.X, v.Y, v.W, v.H, th.BoxRadius, fill, stroke, dash, th.BoxStrokeW)
+			if v.Band > 0 && !v.Entity {
+				c.Line(v.X, v.Y+v.Band, v.X+v.W, v.Y+v.Band, th.BandRule, 1, false)
+			}
 			if th.AccentW > 0 && (!v.Entity || th.EntityAccent) {
 				y, h := insetAccent(v, th)
 				c.Rect(v.X, y, th.AccentW, h, 0, th.AccentColor, "", "", 0)

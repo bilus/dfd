@@ -119,9 +119,11 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 		}
 		return l.Name
 	}
+	// The number sits in its own compartment, divided by a rule, so a
+	// title can never run through it however it wraps.
 	band := 0
 	if c.Number {
-		band = numberSt.LineH()
+		band = numberSt.LineH() + 6
 	}
 
 	// Wrap titles up front; the tallest one sets the uniform box height.
@@ -129,14 +131,7 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	boxH := c.BoxH
 	for i, st := range d.Steps {
 		titles[i] = WrapSegments(st.Title, c.BoxW-2*BoxPad, titleSt.Face)
-		text := len(titles[i]) * titleSt.LineH()
-		h := text + 2*BoxPad
-		// The title stays centred in the box, so the box has to be tall
-		// enough that the space above it still clears the number band.
-		if band > 0 && text+2*band > h {
-			h = text + 2*band
-		}
-		if h > boxH {
+		if h := band + len(titles[i])*titleSt.LineH() + 2*BoxPad; h > boxH {
 			boxH = h
 		}
 	}
@@ -262,11 +257,11 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 		r := i / perRow
 		x, by := boxX(i), rowY[r]
 		cy := by + c.BoxH/2
-		s.Items = append(s.Items, Rect{X: x, Y: by, W: c.BoxW, H: c.BoxH, Entity: st.Kind == ast.Entity})
+		s.Items = append(s.Items, Rect{X: x, Y: by, W: c.BoxW, H: c.BoxH, Band: band, Entity: st.Kind == ast.Entity})
 		if numbers[i] != "" {
-			s.Items = append(s.Items, Text{X: x + BoxPad, Y: by + BoxPad + numberSt.LineH()/2, S: numbers[i], Anchor: Start, Role: theme.Number})
+			s.Items = append(s.Items, Text{X: x + BoxPad, Y: by + band - 5, S: numbers[i], Anchor: Start, Role: theme.Number})
 		}
-		titleCY := by + c.BoxH/2
+		titleCY := by + band + (c.BoxH-band)/2
 		first := titleCY + 5 - (len(titles[i])-1)*titleSt.LineH()/2
 		for j, ln := range titles[i] {
 			s.Items = append(s.Items, Text{X: x + c.BoxW/2, Y: first + j*titleSt.LineH(), S: ln, Anchor: Middle, Role: theme.Title})
@@ -497,10 +492,13 @@ type Scene struct {
 
 type Item interface{ item() }
 
-// Rect is a box. Entity marks an external source or sink, which a
-// theme draws differently from a process.
+// Rect is a box. Entity marks an external source or sink, which a theme
+// draws differently from a process. Band is the height of the number
+// compartment at the top, 0 when the diagram is not numbered; a rule is
+// drawn across the box at that depth.
 type Rect struct {
 	X, Y, W, H int
+	Band       int
 	Entity     bool
 }
 

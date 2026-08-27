@@ -80,6 +80,9 @@ type Theme struct {
 	EntityShadow int    // drop-shadow offset, 0 = none
 	EntityAccent bool   // draw the accent bar on an entity
 
+	// BandRule divides the number compartment from the title.
+	BandRule string
+
 	// LabelOnLine centres flow and turn labels on their arrow rather
 	// than setting them beside it; LabelChip then masks the line where
 	// the text crosses it.
@@ -141,6 +144,7 @@ func newDefault(base int) (Theme, error) {
 		EntityStroke:  "#000",
 		EntityShadow:  6,
 		EntityAccent:  true,
+		BandRule:      "#000",
 	}
 	num := st
 	num.Size = float64(base - 2)
@@ -199,6 +203,7 @@ func newPlex(base int) (Theme, error) {
 		EntityStroke:  "#8A94A0",
 		EntityDash:    "5 4",
 		EntityAccent:  false,
+		BandRule:      "#C9D1D9",
 		LabelOnLine:   true,
 		LabelChip:     true,
 	}

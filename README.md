@@ -102,7 +102,9 @@ theme.
 
 `--number` is off by default. It numbers processes in flow order and
 datastores D1, D2, skipping external entities, which is the DFD
-convention. Nodes are identified by their label, so one that appears
+convention. A numbered box carries a small compartment at the top,
+divided by a rule, holding the number; entities get neither. Nodes are
+identified by their label, so one that appears
 more than once keeps the number it was first given:
 
 ```

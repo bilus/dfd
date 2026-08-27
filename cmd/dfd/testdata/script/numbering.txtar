@@ -34,19 +34,20 @@ dfd flow.dfd -o bare.svg
 > html
 {CDN}
 -- want-plain.svg --
-<svg viewBox="0 0 990 240" width="990" height="240" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="13">
+<svg viewBox="0 0 990 241" width="990" height="241" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" font-size="13">
   <defs>
     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
       <path d="M0,0L10,5L0,10z" fill="#000"/>
     </marker>
   </defs>
-  <rect x="0" y="0" width="990" height="240" fill="#fff"/>
-  <rect x="46" y="146" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
-  <rect x="40" y="140" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
-  <text x="120" y="175" fill="#000" text-anchor="middle">Client</text>
-  <rect x="290" y="140" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
-  <text x="302" y="159" fill="#000" font-size="11">1</text>
-  <text x="370" y="175" fill="#000" text-anchor="middle">Authenticate</text>
+  <rect x="0" y="0" width="990" height="241" fill="#fff"/>
+  <rect x="46" y="146" width="160" height="61" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="40" y="140" width="160" height="61" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="120" y="185" fill="#000" text-anchor="middle">Client</text>
+  <rect x="290" y="140" width="160" height="61" fill="#fff" stroke="#000" stroke-width="2"/>
+  <line x1="290" y1="160" x2="450" y2="160" stroke="#000" stroke-width="1"/>
+  <text x="302" y="155" fill="#000" font-size="11">1</text>
+  <text x="370" y="185" fill="#000" text-anchor="middle">Authenticate</text>
   <line x1="200" y1="170" x2="287" y2="170" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
   <text x="245" y="162" fill="#000" text-anchor="middle">request</text>
   <line x1="295" y1="40" x2="445" y2="40" stroke="#000" stroke-width="2"/>
@@ -56,9 +57,10 @@ dfd flow.dfd -o bare.svg
   <text x="342" y="113" fill="#000" text-anchor="end">lookup</text>
   <line x1="390" y1="76" x2="390" y2="137" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
   <text x="398" y="113" fill="#000">profile</text>
-  <rect x="540" y="140" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
-  <text x="552" y="159" fill="#000" font-size="11">2</text>
-  <text x="620" y="175" fill="#000" text-anchor="middle">Render page</text>
+  <rect x="540" y="140" width="160" height="61" fill="#fff" stroke="#000" stroke-width="2"/>
+  <line x1="540" y1="160" x2="700" y2="160" stroke="#000" stroke-width="1"/>
+  <text x="552" y="155" fill="#000" font-size="11">2</text>
+  <text x="620" y="185" fill="#000" text-anchor="middle">Render page</text>
   <line x1="450" y1="170" x2="537" y2="170" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
   <text x="495" y="162" fill="#000" text-anchor="middle">claims</text>
   <line x1="545" y1="40" x2="695" y2="40" stroke="#000" stroke-width="2"/>
@@ -66,29 +68,30 @@ dfd flow.dfd -o bare.svg
   <text x="620" y="62" fill="#000" text-anchor="middle">D2 Pages</text>
   <line x1="620" y1="140" x2="620" y2="79" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
   <text x="628" y="113" fill="#000">page</text>
-  <rect x="796" y="146" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
-  <rect x="790" y="140" width="160" height="60" fill="#fff" stroke="#000" stroke-width="2"/>
-  <text x="870" y="175" fill="#000" text-anchor="middle">CDN</text>
+  <rect x="796" y="146" width="160" height="61" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="790" y="140" width="160" height="61" fill="#fff" stroke="#000" stroke-width="2"/>
+  <text x="870" y="185" fill="#000" text-anchor="middle">CDN</text>
   <line x1="700" y1="170" x2="787" y2="170" stroke="#000" stroke-width="1.5" marker-end="url(#ah)"/>
   <text x="745" y="162" fill="#000" text-anchor="middle">html</text>
 </svg>
 -- want-plex.svg --
-<svg viewBox="0 0 1017 240" width="1017" height="240" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, Helvetica Neue, Arial, sans-serif" font-size="13">
+<svg viewBox="0 0 1017 244" width="1017" height="244" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, Helvetica Neue, Arial, sans-serif" font-size="13">
   <defs>
     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0,0L10,5L0,10z" fill="#63489E"/>
     </marker>
   </defs>
-  <rect x="0" y="0" width="1017" height="240" fill="#F2F4F6"/>
-  <rect x="40" y="140" width="160" height="60" rx="4" fill="none" stroke="#8A94A0" stroke-width="1.25" stroke-dasharray="5 4"/>
-  <text x="120" y="175" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Client</text>
-  <rect x="299" y="140" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
-  <rect x="299" y="144" width="3" height="52" fill="#63489E"/>
-  <text x="311" y="159" fill="#63489E" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="11">1</text>
-  <text x="379" y="175" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Authenticate</text>
-  <line x1="200" y1="170" x2="296" y2="170" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
-  <rect x="216" y="162" width="67" height="16" rx="3" fill="#F2F4F6"/>
-  <text x="249" y="174" fill="#63489E" text-anchor="middle" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">request</text>
+  <rect x="0" y="0" width="1017" height="244" fill="#F2F4F6"/>
+  <rect x="40" y="140" width="160" height="64" rx="4" fill="none" stroke="#8A94A0" stroke-width="1.25" stroke-dasharray="5 4"/>
+  <text x="120" y="187" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Client</text>
+  <rect x="299" y="140" width="160" height="64" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <line x1="299" y1="160" x2="459" y2="160" stroke="#C9D1D9" stroke-width="1"/>
+  <rect x="299" y="144" width="3" height="56" fill="#63489E"/>
+  <text x="311" y="155" fill="#63489E" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="11">1</text>
+  <text x="379" y="187" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Authenticate</text>
+  <line x1="200" y1="172" x2="296" y2="172" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="216" y="164" width="67" height="16" rx="3" fill="#F2F4F6"/>
+  <text x="249" y="176" fill="#63489E" text-anchor="middle" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">request</text>
   <line x1="304" y1="40" x2="454" y2="40" stroke="#12161A" stroke-width="1.25"/>
   <line x1="304" y1="76" x2="454" y2="76" stroke="#12161A" stroke-width="1.25"/>
   <text x="379" y="63" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">D1 Users</text>
@@ -98,22 +101,23 @@ dfd flow.dfd -o bare.svg
   <line x1="399" y1="76" x2="399" y2="137" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
   <rect x="399" y="101" width="67" height="16" rx="3" fill="#F2F4F6"/>
   <text x="407" y="113" fill="#63489E" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">profile</text>
-  <rect x="558" y="140" width="160" height="60" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
-  <rect x="558" y="144" width="3" height="52" fill="#63489E"/>
-  <text x="570" y="159" fill="#63489E" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="11">2</text>
-  <text x="638" y="175" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Render page</text>
-  <line x1="459" y1="170" x2="555" y2="170" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
-  <rect x="478" y="162" width="60" height="16" rx="3" fill="#F2F4F6"/>
-  <text x="508" y="174" fill="#63489E" text-anchor="middle" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">claims</text>
+  <rect x="558" y="140" width="160" height="64" rx="4" fill="#FFFFFF" stroke="#12161A" stroke-width="1.25"/>
+  <line x1="558" y1="160" x2="718" y2="160" stroke="#C9D1D9" stroke-width="1"/>
+  <rect x="558" y="144" width="3" height="56" fill="#63489E"/>
+  <text x="570" y="155" fill="#63489E" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="11">2</text>
+  <text x="638" y="187" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">Render page</text>
+  <line x1="459" y1="172" x2="555" y2="172" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="478" y="164" width="60" height="16" rx="3" fill="#F2F4F6"/>
+  <text x="508" y="176" fill="#63489E" text-anchor="middle" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">claims</text>
   <line x1="563" y1="40" x2="713" y2="40" stroke="#12161A" stroke-width="1.25"/>
   <line x1="563" y1="76" x2="713" y2="76" stroke="#12161A" stroke-width="1.25"/>
   <text x="638" y="63" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">D2 Pages</text>
   <line x1="638" y1="140" x2="638" y2="79" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
   <rect x="638" y="101" width="45" height="16" rx="3" fill="#F2F4F6"/>
   <text x="646" y="113" fill="#63489E" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">page</text>
-  <rect x="817" y="140" width="160" height="60" rx="4" fill="none" stroke="#8A94A0" stroke-width="1.25" stroke-dasharray="5 4"/>
-  <text x="897" y="175" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">CDN</text>
-  <line x1="718" y1="170" x2="814" y2="170" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
-  <rect x="745" y="162" width="45" height="16" rx="3" fill="#F2F4F6"/>
-  <text x="767" y="174" fill="#63489E" text-anchor="middle" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">html</text>
+  <rect x="817" y="140" width="160" height="64" rx="4" fill="none" stroke="#8A94A0" stroke-width="1.25" stroke-dasharray="5 4"/>
+  <text x="897" y="187" fill="#12161A" text-anchor="middle" font-size="15" font-weight="600">CDN</text>
+  <line x1="718" y1="172" x2="814" y2="172" stroke="#63489E" stroke-width="1.4" marker-end="url(#ah)"/>
+  <rect x="745" y="164" width="45" height="16" rx="3" fill="#F2F4F6"/>
+  <text x="767" y="176" fill="#63489E" text-anchor="middle" font-family="IBM Plex Mono, SF Mono, Menlo, monospace" font-size="12">html</text>
 </svg>
