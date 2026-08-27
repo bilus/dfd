@@ -48,6 +48,7 @@ is ignored — indentation is purely cosmetic. Encoding is UTF-8; a trailing `\r
 | `\|Text\|`              | Datastore attached to the nearest preceding process. |
 | `>` or `> label`        | Forward arrow, optional label.                     |
 | `<` or `< label`        | Return arrow, optional label.                      |
+| `Alias := Label`        | Inside any bracket: declares Alias as shorthand for Label. |
 | `# ...`                 | Comment, ignored.                                  |
 | (empty)                 | Ignored.                                           |
 
@@ -97,8 +98,9 @@ verbatim — spaces and punctuation need no quoting. Labels render on one line.
 
 ### Escapes
 
-Inside process names: `\]` for a literal `]`. Inside store names: `\|` for a
-literal `|`. `\\` is a literal backslash in both. Nothing else is escaped.
+Inside process names: `\]` for a literal `]`. Inside entity names: `\}`.
+Inside store names: `\|`. In any of them, `\:=` is a literal alias marker
+and `\\` a literal backslash. Nothing else is escaped.
 
 ### Parse errors
 
@@ -183,6 +185,24 @@ implemented renderer (visually reviewed), not from the hand-made file.
 spans lines and escapes (`\}`) the same way. Data may not flow straight
 between an entity and a datastore, so attaching a store to an entity is
 an error.
+
+### Identity and aliases
+
+A node is identified by its label, within its kind. Two datastores
+labelled the same are one store and share a number; so do two processes
+with the same title. They are still drawn wherever they appear, which is
+how DFDs duplicate a store rather than dragging a flow across the page.
+Only numbering is shared, not geometry.
+
+An unescaped `:=` inside a bracket declares a shorthand:
+`|R := Registration|` names the store Registration and registers `R` for
+it. A later `|R|` is that same store and draws the full label. Aliases
+must be declared before use (the parser is single-pass), each kind has
+its own namespace, only the opening line of a multi-line bracket can
+declare one, and the first unescaped `:=` does the splitting, so
+everything after it is label. Write `\:=` for a literal marker.
+
+### Numbering
 
 `--number` (off by default) numbers processes 1, 2, 3 in flow order and
 datastores D1, D2, skipping entities. `--number-prefix 2.` levels the

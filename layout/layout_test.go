@@ -933,3 +933,44 @@ func TestNumberBandKeepsAWrappedTitleClear(t *testing.T) {
 		t.Errorf("first title line at %d collides with the number band ending at %d", firstTitle.Y, num.Y)
 	}
 }
+
+func TestSameLabelIsTheSameNodeForNumbering(t *testing.T) {
+	// Registration appears twice and Confirm twice; each keeps the
+	// number it was given the first time.
+	src := "[Register]\n    > row\n    |Registration|\n> id\n[Confirm]\n    < row\n    |Registration|\n" +
+		"> ok\n[Notify]\n    > event\n    |Events|\n> again\n[Confirm]\n"
+	s := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, FontSize: 13, PerRow: 4, Number: true})
+	want := []string{"1", "2", "3", "2"}
+	if got := numberTexts(s); len(got) != 4 || got[0] != want[0] || got[1] != want[1] || got[2] != want[2] || got[3] != want[3] {
+		t.Errorf("process numbers = %q, want %q", numberTexts(s), want)
+	}
+	stores := storeNames(s)
+	wantStores := []string{"D1 Registration", "D1 Registration", "D2 Events"}
+	if len(stores) != 3 {
+		t.Fatalf("store names = %q", stores)
+	}
+	for i := range wantStores {
+		if stores[i] != wantStores[i] {
+			t.Errorf("store names = %q, want %q", stores, wantStores)
+			break
+		}
+	}
+}
+
+func TestDistinctLabelsStillCountUp(t *testing.T) {
+	s := arrange(t, "[A]\n> x\n[B]\n> y\n[C]\n", layout.Config{
+		BoxW: 160, BoxH: 60, FontSize: 13, Number: true,
+	})
+	if got := numberTexts(s); len(got) != 3 || got[2] != "3" {
+		t.Errorf("numbers = %q, want [1 2 3]", got)
+	}
+}
+
+func TestEntitiesRepeatWithoutTakingNumbers(t *testing.T) {
+	s := arrange(t, "{Client}\n> a\n[Handle]\n> b\n{Client}\n", layout.Config{
+		BoxW: 160, BoxH: 60, FontSize: 13, Number: true,
+	})
+	if got := numberTexts(s); len(got) != 1 || got[0] != "1" {
+		t.Errorf("numbers = %q, want just [1] for the one process", got)
+	}
+}

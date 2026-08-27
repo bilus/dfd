@@ -1,0 +1,35 @@
+# A label declared with := can be referred to by its alias. Same label
+# means the same node, so it keeps the same number wherever it appears.
+dfd --number flow.dfd -o out.svg
+
+# one store, named in full both times, numbered once
+grep -count=2 '>D1 Registration</text>' out.svg
+grep -count=1 '>D2 Events</text>' out.svg
+! grep 'D3' out.svg
+! grep '>R</text>' out.svg
+
+# the repeated process keeps its first number
+grep -count=2 '>Confirm</text>' out.svg
+grep -count=2 '>2</text>' out.svg
+! grep '>4</text>' out.svg
+
+# a literal := survives escaping
+dfd escaped.dfd -o escaped.svg
+grep '>x := y</text>' escaped.svg
+
+-- flow.dfd --
+[Register user]
+    > row
+    |R := Registration|
+> id
+[Confirm]
+    < row
+    |R|
+> ok
+[Notify]
+    > event
+    |Events|
+> repeat
+[Confirm]
+-- escaped.dfd --
+[x \:= y]

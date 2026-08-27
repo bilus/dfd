@@ -89,16 +89,27 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	numbers := make([]string, n)
 	storeNames := make(map[*ast.StoreLink]string)
 	if c.Number {
-		process, store := 0, 0
+		// Nodes are identified by their label, so one that appears more
+		// than once keeps the number it was first given.
+		seenProcess, seenStore := map[string]string{}, map[string]int{}
 		for i := range d.Steps {
 			st := &d.Steps[i]
 			if st.Kind != ast.Entity {
-				process++
-				numbers[i] = fmt.Sprintf("%s%d", c.NumberPrefix, process)
+				num, ok := seenProcess[st.Title]
+				if !ok {
+					num = fmt.Sprintf("%s%d", c.NumberPrefix, len(seenProcess)+1)
+					seenProcess[st.Title] = num
+				}
+				numbers[i] = num
 			}
 			for j := range st.Stores {
-				store++
-				storeNames[&st.Stores[j]] = fmt.Sprintf("D%d %s", store, st.Stores[j].Name)
+				l := &st.Stores[j]
+				num, ok := seenStore[l.Name]
+				if !ok {
+					num = len(seenStore) + 1
+					seenStore[l.Name] = num
+				}
+				storeNames[l] = fmt.Sprintf("D%d %s", num, l.Name)
 			}
 		}
 	}

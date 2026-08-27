@@ -263,3 +263,74 @@ func TestParseEntityErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestParseAliasDeclarationAndReference(t *testing.T) {
+	d := mustParse(t, "[Register]\n> row\n|R := Registration|\n[Confirm]\n< row\n|R|\n")
+	first := d.Steps[0].Stores[0].Name
+	second := d.Steps[1].Stores[0].Name
+	if first != "Registration" || second != "Registration" {
+		t.Errorf("store names = %q and %q, want both %q", first, second, "Registration")
+	}
+}
+
+func TestParseAliasWorksForEveryKind(t *testing.T) {
+	src := "{E := Client app}\n> a\n[P := Long process title]\n" +
+		"    > x\n    |S := The store|\n> b\n{E}\n> c\n[P]\n> d\n[Last]\n    > y\n    |S|\n"
+	d := mustParse(t, src)
+	if got := d.Steps[0].Title; got != "Client app" {
+		t.Errorf("entity declaration = %q", got)
+	}
+	if got := d.Steps[2].Title; got != "Client app" {
+		t.Errorf("entity reference = %q, want the declared label", got)
+	}
+	if got := d.Steps[1].Title; got != "Long process title" {
+		t.Errorf("process declaration = %q", got)
+	}
+	if got := d.Steps[3].Title; got != "Long process title" {
+		t.Errorf("process reference = %q, want the declared label", got)
+	}
+	if got := d.Steps[4].Stores[0].Name; got != "The store" {
+		t.Errorf("store reference = %q, want the declared label", got)
+	}
+}
+
+func TestParseAliasNamespacesAreSeparatePerKind(t *testing.T) {
+	d := mustParse(t, "{C := Client app}\n> a\n[C]\n")
+	if got := d.Steps[1].Title; got != "C" {
+		t.Errorf("process title = %q; an entity alias must not resolve a process", got)
+	}
+}
+
+func TestParseAliasMustBeDeclaredBeforeUse(t *testing.T) {
+	d := mustParse(t, "[R]\n> a\n[R := Registration]\n")
+	if got := d.Steps[0].Title; got != "R" {
+		t.Errorf("title = %q; a name used before any declaration is just that name", got)
+	}
+	if got := d.Steps[1].Title; got != "Registration" {
+		t.Errorf("declaration = %q", got)
+	}
+}
+
+func TestParseAliasTakesEverythingBeforeTheFirstMarker(t *testing.T) {
+	d := mustParse(t, "[Two words := A label := with markers]\n> a\n[Two words]\n")
+	if got := d.Steps[0].Title; got != "A label := with markers" {
+		t.Errorf("label = %q, want everything after the first marker", got)
+	}
+	if got := d.Steps[1].Title; got != "A label := with markers" {
+		t.Errorf("reference = %q", got)
+	}
+}
+
+func TestParseEscapedMarkerIsLiteral(t *testing.T) {
+	d := mustParse(t, `[x \:= y]`+"\n")
+	if got := d.Steps[0].Title; got != "x := y" {
+		t.Errorf("title = %q, want a literal marker", got)
+	}
+}
+
+func TestParseAliasOnlyOnTheOpeningLine(t *testing.T) {
+	d := mustParse(t, "[P := first\n second := not an alias]\n")
+	if got := d.Steps[0].Title; got != "first\nsecond := not an alias" {
+		t.Errorf("title = %q", got)
+	}
+}

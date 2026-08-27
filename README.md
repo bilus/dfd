@@ -72,8 +72,11 @@ so PNG output is identical everywhere with no fonts installed.
   takes a slot in the flow like a process
 - `|Text|` — datastore (two horizontal lines) attached to the nearest
   preceding process
+- `Alias := Label` inside any bracket declares a shorthand; the bare
+  alias then stands for that label, as in `|R := Registration|` then
+  `|R|`. Both draw the full label
 - `#` — comment; blank lines and indentation are cosmetic
-- `\]`, `\|`, `\\` — literal brackets in names
+- `\]`, `\|`, `\}`, `\:=`, `\\` — literal brackets and markers in names
 - line breaks: keep a `[bracket` open across lines, or continue an
   arrow label on the next line — each source line renders as one line
 
@@ -99,7 +102,18 @@ theme.
 
 `--number` is off by default. It numbers processes in flow order and
 datastores D1, D2, skipping external entities, which is the DFD
-convention. Each theme draws an entity in its own idiom: the default
+convention. Nodes are identified by their label, so one that appears
+more than once keeps the number it was first given:
+
+```
+[Register user]
+    > row
+    |R := Registration|
+> id
+[Confirm]
+    < row
+    |R|          # the same store: still D1, still drawn as Registration
+``` Each theme draws an entity in its own idiom: the default
 theme uses the shadowed Gane-Sarson terminator, plex the dashed grey
 outline it already uses for things outside the system.
 

@@ -38,6 +38,7 @@ type openBracket struct {
 	start int
 	close byte
 	kind  ast.Kind
+	alias string
 	parts []string
 }
 
@@ -49,6 +50,24 @@ func Parse(r io.Reader, name string) (*ast.Diagram, error) {
 	var pending []arrowLine
 	var open *openBracket
 	canCont := false // the previous line was an arrow or its continuation
+
+	// One alias namespace per kind. A bare name that matches a
+	// declaration made earlier stands for the label it declared.
+	aliases := map[ast.Kind]map[string]string{
+		ast.Process: {},
+		ast.Entity:  {},
+	}
+	storeAliases := map[string]string{}
+	resolve := func(table map[string]string, alias, label string) string {
+		if alias != "" {
+			table[alias] = label
+			return label
+		}
+		if full, ok := table[label]; ok {
+			return full
+		}
+		return label
+	}
 
 	appendStep := func(title string, kind ast.Kind, n int) error {
 		if strings.TrimSpace(title) == "" {
@@ -72,13 +91,19 @@ func Parse(r io.Reader, name string) (*ast.Diagram, error) {
 		n++
 		line := strings.TrimSpace(strings.TrimSuffix(sc.Text(), "\r"))
 		if open != nil {
-			frag, closed, err := scanFragment(line, open.close, n, errf)
+			// Only the opening line can declare an alias, so a later
+			// line keeps its marker as ordinary text.
+			alias, frag, closed, err := scanFragment(line, open.close, n, errf)
 			if err != nil {
 				return nil, err
 			}
+			if alias != "" {
+				frag = alias + " " + AliasMarker + " " + frag
+			}
 			open.parts = append(open.parts, frag)
 			if closed {
-				if err := appendStep(strings.Join(open.parts, "\n"), open.kind, n); err != nil {
+				title := resolve(aliases[open.kind], open.alias, strings.Join(open.parts, "\n"))
+				if err := appendStep(title, open.kind, n); err != nil {
 					return nil, err
 				}
 				open = nil
@@ -94,26 +119,27 @@ func Parse(r io.Reader, name string) (*ast.Diagram, error) {
 			if line[0] == '{' {
 				kind, close = ast.Entity, '}'
 			}
-			frag, closed, err := scanFragment(line[1:], close, n, errf)
+			alias, frag, closed, err := scanFragment(line[1:], close, n, errf)
 			if err != nil {
 				return nil, err
 			}
 			if !closed {
-				open = &openBracket{start: n, close: close, kind: kind, parts: []string{frag}}
+				open = &openBracket{start: n, close: close, kind: kind, alias: alias, parts: []string{frag}}
 				continue
 			}
-			if err := appendStep(frag, kind, n); err != nil {
+			if err := appendStep(resolve(aliases[kind], alias, frag), kind, n); err != nil {
 				return nil, err
 			}
 		case strings.HasPrefix(line, "|"):
 			canCont = false
-			nm, closed, err := scanFragment(line[1:], '|', n, errf)
+			alias, nm, closed, err := scanFragment(line[1:], '|', n, errf)
 			if err != nil {
 				return nil, err
 			}
 			if !closed {
 				return nil, errf(n, "missing closing %q (datastore names cannot span lines)", "|")
 			}
+			nm = resolve(storeAliases, alias, nm)
 			if nm == "" {
 				return nil, errf(n, "empty datastore name")
 			}
@@ -211,11 +237,18 @@ func bindStore(name string, pending []arrowLine, line int, errf func(int, string
 	return link, nil
 }
 
-// scanFragment scans one line of bracketed content, resolving \<close>
-// and \\ escapes. closed reports whether the unescaped close delimiter
-// ended the line; text after the delimiter is an error.
-func scanFragment(s string, close byte, n int, errf func(int, string, ...any) error) (frag string, closed bool, err error) {
+// AliasMarker separates an alias from the label it stands for, as in
+// "R := Registration". Write \:= for a literal one.
+const AliasMarker = ":="
+
+// scanFragment scans one line of bracketed content, resolving \<close>,
+// \:= and \\ escapes. An unescaped := splits the line into an alias and
+// the label it declares; alias is "" when there is none. closed reports
+// whether the unescaped close delimiter ended the line; text after the
+// delimiter is an error.
+func scanFragment(s string, close byte, n int, errf func(int, string, ...any) error) (alias, frag string, closed bool, err error) {
 	var b strings.Builder
+	split := -1 // index in the built string where the alias ended
 	i := 0
 	for i < len(s) {
 		c := s[i]
@@ -223,15 +256,32 @@ func scanFragment(s string, close byte, n int, errf func(int, string, ...any) er
 		case c == '\\' && i+1 < len(s) && (s[i+1] == close || s[i+1] == '\\'):
 			b.WriteByte(s[i+1])
 			i += 2
+		case c == '\\' && strings.HasPrefix(s[i+1:], AliasMarker):
+			b.WriteString(AliasMarker)
+			i += 1 + len(AliasMarker)
+		case split < 0 && strings.HasPrefix(s[i:], AliasMarker):
+			split = b.Len()
+			b.WriteString(AliasMarker)
+			i += len(AliasMarker)
 		case c == close:
 			if i != len(s)-1 {
-				return "", false, errf(n, "unexpected text after %q", string(close))
+				return "", "", false, errf(n, "unexpected text after %q", string(close))
 			}
-			return strings.TrimSpace(b.String()), true, nil
+			a, f := divide(b.String(), split)
+			return a, f, true, nil
 		default:
 			b.WriteByte(c)
 			i++
 		}
 	}
-	return strings.TrimSpace(b.String()), false, nil
+	a, f := divide(b.String(), split)
+	return a, f, false, nil
+}
+
+// divide splits a scanned line at the alias marker found at i.
+func divide(s string, i int) (alias, label string) {
+	if i < 0 {
+		return "", strings.TrimSpace(s)
+	}
+	return strings.TrimSpace(s[:i]), strings.TrimSpace(s[i+len(AliasMarker):])
 }
