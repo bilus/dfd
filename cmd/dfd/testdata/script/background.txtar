@@ -1,12 +1,10 @@
-# --background repaints the page and nothing else. Label chips keep the
-# colour their theme gives them.
+# --background repaints the page. Label chips mask the connector with
+# the page colour, so they have to follow it.
 dfd --background ffcc00 flow.dfd -o plain.svg
 grep '<rect x="0" y="0" width="\d+" height="\d+" fill="#ffcc00"/>' plain.svg
 
 dfd --theme plex --background ffcc00 flow.dfd -o plex.svg
-grep '<rect x="0" y="0" width="\d+" height="\d+" fill="#ffcc00"/>' plex.svg
-! grep 'rx="3" fill="#ffcc00"' plex.svg
-grep 'rx="3" fill="#F2F4F6"' plex.svg
+grep 'rx="3" fill="#ffcc00"' plex.svg
 
 # a hash and the three-digit form are both accepted
 dfd --background '#ffcc00' flow.dfd -o hash.svg

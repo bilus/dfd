@@ -102,8 +102,9 @@ theme.
 ```
 
 `--background` takes a hex colour with or without a leading hash, three
-or six digits. It repaints the page and nothing else: boxes, chips and
-every other colour stay as the theme set them.
+or six digits. It repaints the page only, not the boxes, and label chips
+follow it since they mask the connector with the page colour. Handy for
+putting a plex diagram on white.
 
 `--number` is off by default. It numbers processes in flow order and
 datastores D1, D2, skipping external entities, which is the DFD
