@@ -81,8 +81,8 @@ func PNG(s *layout.Scene, th theme.Theme, scale float64, w io.Writer) error {
 // scaledFaces reopens every role's face at the raster scale, since the
 // theme's own faces are sized for layout at 1x.
 func scaledFaces(th theme.Theme, scale float64) (map[theme.Role]font.Face, error) {
-	out := make(map[theme.Role]font.Face, 3)
-	for _, r := range []theme.Role{theme.Title, theme.Label, theme.StoreName} {
+	out := make(map[theme.Role]font.Face, len(theme.Roles()))
+	for _, r := range theme.Roles() {
 		f, err := th.Style(r).FaceAt(scale)
 		if err != nil {
 			return nil, err

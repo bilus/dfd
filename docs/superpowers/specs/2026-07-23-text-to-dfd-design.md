@@ -44,6 +44,7 @@ is ignored — indentation is purely cosmetic. Encoding is UTF-8; a trailing `\r
 | Line (after trimming)   | Meaning                                            |
 | ----------------------- | -------------------------------------------------- |
 | `[Text]`                | Process box. Document order defines the flow.      |
+| `{Text}`                | External entity: a source or sink outside the system. Takes a slot in the flow. |
 | `\|Text\|`              | Datastore attached to the nearest preceding process. |
 | `>` or `> label`        | Forward arrow, optional label.                     |
 | `<` or `< label`        | Return arrow, optional label.                      |
@@ -175,6 +176,24 @@ implemented renderer (visually reviewed), not from the hand-made file.
 - Box titles wrap at word boundaries to fit the box interior (12px side
   padding); a single overlong word breaks mid-word. Store names and arrow
   labels never wrap.
+
+## External entities and numbering
+
+`{Entity}` is a step like `[Process]`, connected by the same arrows, and
+spans lines and escapes (`\}`) the same way. Data may not flow straight
+between an entity and a datastore, so attaching a store to an entity is
+an error.
+
+`--number` (off by default) numbers processes 1, 2, 3 in flow order and
+datastores D1, D2, skipping entities. `--number-prefix 2.` levels the
+process numbers to 2.1, 2.2; datastores stay D1, D2 whatever the level.
+A number sits top-left inside its box in a band, and the title centres
+below that band, so the two can never collide however the title wraps.
+A datastore's number prefixes its name, which widens the glyph through
+the existing measurement.
+
+Entity styling is per theme: `default` draws the Gane-Sarson shadowed
+terminator, `plex` the dashed grey outline with no accent spine.
 
 ## Themes
 

@@ -25,6 +25,7 @@ const (
 	Title     Role = iota // process box titles
 	Label                 // arrow labels
 	StoreName             // datastore names
+	Number                // process numbers, when numbering is on
 	numRoles
 )
 
@@ -91,6 +92,16 @@ type Theme struct {
 // Style returns the typography for one role.
 func (t Theme) Style(r Role) Style { return t.styles[r] }
 
+// Roles lists every text role, so a consumer that must handle all of
+// them cannot silently miss one that is added later.
+func Roles() []Role {
+	out := make([]Role, 0, numRoles)
+	for r := Role(0); r < numRoles; r++ {
+		out = append(out, r)
+	}
+	return out
+}
+
 // Names lists the available themes, in the order they are offered.
 func Names() []string { return []string{"default", "plex"} }
 
@@ -131,7 +142,15 @@ func newDefault(base int) (Theme, error) {
 		EntityShadow:  6,
 		EntityAccent:  true,
 	}
-	t.styles = [numRoles]Style{Title: st, Label: st, StoreName: st}
+	num := st
+	num.Size = float64(base - 2)
+	num.open = typeface.GoRegular
+	numFace, err := typeface.GoRegular(num.Size)
+	if err != nil {
+		return Theme{}, err
+	}
+	num.Face = numFace
+	t.styles = [numRoles]Style{Title: st, Label: st, StoreName: st, Number: num}
 	return t, nil
 }
 
@@ -145,7 +164,7 @@ func newPlex(base int) (Theme, error) {
 		sans   = "IBM Plex Sans, Helvetica Neue, Arial, sans-serif"
 		mono   = "IBM Plex Mono, SF Mono, Menlo, monospace"
 	)
-	titleSize, labelSize := base+2, base-1
+	titleSize, labelSize, numberSize := base+2, base-1, base-2
 	titleFace, err := typeface.PlexSansSemiBold(float64(titleSize))
 	if err != nil {
 		return Theme{}, err
@@ -155,6 +174,10 @@ func newPlex(base int) (Theme, error) {
 		return Theme{}, err
 	}
 	storeFace, err := typeface.PlexSansSemiBold(float64(titleSize))
+	if err != nil {
+		return Theme{}, err
+	}
+	numberFace, err := typeface.PlexMono(float64(numberSize))
 	if err != nil {
 		return Theme{}, err
 	}
@@ -183,6 +206,7 @@ func newPlex(base int) (Theme, error) {
 		Title:     {Family: sans, Size: float64(titleSize), Weight: 600, Color: ink, Face: titleFace, open: typeface.PlexSansSemiBold},
 		Label:     {Family: mono, Size: float64(labelSize), Color: violet, Face: labelFace, open: typeface.PlexMono},
 		StoreName: {Family: sans, Size: float64(titleSize), Weight: 600, Color: ink, Face: storeFace, open: typeface.PlexSansSemiBold},
+		Number:    {Family: mono, Size: float64(numberSize), Color: violet, Face: numberFace, open: typeface.PlexMono},
 	}
 	return t, nil
 }

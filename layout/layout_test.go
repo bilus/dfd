@@ -819,3 +819,117 @@ func TestOneLongWordWidensEveryGapEqually(t *testing.T) {
 		}
 	}
 }
+
+func numberTexts(s *layout.Scene) []string {
+	var out []string
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok && tx.Role == theme.Number {
+			out = append(out, tx.S)
+		}
+	}
+	return out
+}
+
+func storeNames(s *layout.Scene) []string {
+	var out []string
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok && tx.Role == theme.StoreName {
+			out = append(out, tx.S)
+		}
+	}
+	return out
+}
+
+const numberingSrc = "{Client}\n> a\n[One]\n    > x\n    |Users|\n> b\n[Two]\n    > y\n    |Pages|\n> c\n{CDN}\n"
+
+func TestNumberingCountsProcessesAndStoresOnly(t *testing.T) {
+	for _, name := range theme.Names() {
+		th, err := theme.Lookup(name, 13)
+		if err != nil {
+			t.Fatalf("theme: %v", err)
+		}
+		s := arrange(t, numberingSrc, layout.Config{
+			BoxW: 160, BoxH: 60, FontSize: 13, Theme: th, Number: true,
+		})
+		if got := numberTexts(s); len(got) != 2 || got[0] != "1" || got[1] != "2" {
+			t.Errorf("theme %q numbers = %q, want [1 2]; entities are not numbered", name, got)
+		}
+		want := []string{"D1 Users", "D2 Pages"}
+		got := storeNames(s)
+		if len(got) != 2 || got[0] != want[0] || got[1] != want[1] {
+			t.Errorf("theme %q store names = %q, want %q", name, got, want)
+		}
+	}
+}
+
+func TestNumberingIsOffUnlessAsked(t *testing.T) {
+	s := arrange(t, numberingSrc, layout.Config{BoxW: 160, BoxH: 60, FontSize: 13})
+	if got := numberTexts(s); len(got) != 0 {
+		t.Errorf("got numbers %q with numbering off", got)
+	}
+	if got := storeNames(s); got[0] != "Users" {
+		t.Errorf("store name = %q, want the bare name", got[0])
+	}
+}
+
+func TestNumberPrefixMakesLevelledNumbers(t *testing.T) {
+	s := arrange(t, numberingSrc, layout.Config{
+		BoxW: 160, BoxH: 60, FontSize: 13, Number: true, NumberPrefix: "2.",
+	})
+	if got := numberTexts(s); len(got) != 2 || got[0] != "2.1" || got[1] != "2.2" {
+		t.Errorf("numbers = %q, want [2.1 2.2]", got)
+	}
+	// stores stay D1, D2 whatever the process level
+	if got := storeNames(s); got[0] != "D1 Users" {
+		t.Errorf("store name = %q, want D1 Users", got[0])
+	}
+}
+
+func TestNumberSitsInsideTheBoxAboveTheTitle(t *testing.T) {
+	th := plexTheme(t, 13)
+	s := arrange(t, "[Only]\n", layout.Config{BoxW: 160, BoxH: 60, FontSize: 13, Theme: th, Number: true})
+	var num, title layout.Text
+	for _, it := range s.Items {
+		if tx, ok := it.(layout.Text); ok {
+			switch tx.Role {
+			case theme.Number:
+				num = tx
+			case theme.Title:
+				title = tx
+			}
+		}
+	}
+	box := rects(s)[0]
+	if num.X != box.X+layout.BoxPad || num.Anchor != layout.Start {
+		t.Errorf("number at x=%d anchor=%v, want %d and Start", num.X, num.Anchor, box.X+layout.BoxPad)
+	}
+	if num.Y >= title.Y {
+		t.Errorf("number baseline %d is not above the title baseline %d", num.Y, title.Y)
+	}
+	if num.Y <= box.Y {
+		t.Errorf("number baseline %d is outside the box top %d", num.Y, box.Y)
+	}
+}
+
+func TestNumberBandKeepsAWrappedTitleClear(t *testing.T) {
+	th := defaultTheme(t, 13)
+	src := "[A title long enough that it has to wrap onto several lines inside the box]\n"
+	plain := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, FontSize: 13, Theme: th})
+	numbered := arrange(t, src, layout.Config{BoxW: 160, BoxH: 60, FontSize: 13, Theme: th, Number: true})
+	if numbered.Items[0].(layout.Rect).H <= plain.Items[0].(layout.Rect).H {
+		t.Error("a wrapped title must grow the box to make room for the number band")
+	}
+	var num, firstTitle layout.Text
+	for _, it := range numbered.Items {
+		if tx, ok := it.(layout.Text); ok {
+			if tx.Role == theme.Number {
+				num = tx
+			} else if tx.Role == theme.Title && firstTitle.S == "" {
+				firstTitle = tx
+			}
+		}
+	}
+	if firstTitle.Y <= num.Y {
+		t.Errorf("first title line at %d collides with the number band ending at %d", firstTitle.Y, num.Y)
+	}
+}

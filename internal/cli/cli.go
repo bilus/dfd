@@ -25,6 +25,8 @@ type options struct {
 	fontSize int
 	scale    float64
 	theme    string
+	number   bool
+	prefix   string
 	version  bool
 	input    string // positional; "" = stdin
 }
@@ -40,6 +42,8 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs.IntVar(&o.fontSize, "font-size", 13, "label font size")
 	fs.Float64Var(&o.scale, "scale", 2, "PNG resolution multiplier")
 	fs.StringVar(&o.theme, "theme", "default", "visual theme: "+strings.Join(theme.Names(), " or "))
+	fs.BoolVar(&o.number, "number", false, "number processes 1, 2, 3 and datastores D1, D2")
+	fs.StringVar(&o.prefix, "number-prefix", "", "prefix for process numbers, e.g. \"2.\" for a levelled diagram")
 	fs.BoolVar(&o.version, "version", false, "print version")
 	// Accept flags both before and after the positional input path.
 	var positionals []string
@@ -105,6 +109,7 @@ func run(o options, stdin io.Reader, stdout io.Writer) (err error) {
 		BoxW: boxW, BoxH: boxH,
 		PerRow:   o.perRow,
 		FontSize: o.fontSize, Theme: th,
+		Number: o.number, NumberPrefix: o.prefix,
 	})
 	if err != nil {
 		return err

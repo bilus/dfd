@@ -50,7 +50,13 @@ type Config struct {
 	BoxW, BoxH int
 	PerRow     int // boxes per row; 0 = DefaultPerRow
 	FontSize   int
-	Theme      theme.Theme // paints the scene and measures its text; required
+
+	// Number draws a number on every process and D1, D2 on every
+	// datastore, in flow order. NumberPrefix levels the process
+	// numbers: "2." gives 2.1, 2.2. Datastores stay D1, D2.
+	Number       bool
+	NumberPrefix string
+	Theme        theme.Theme // paints the scene and measures its text; required
 }
 
 // TextWidth is the advance width of s in whole pixels.
@@ -59,8 +65,8 @@ func TextWidth(s string, face font.Face) int {
 }
 
 // storeWidth is a datastore glyph's width: wide enough for its name.
-func storeWidth(l ast.StoreLink, face font.Face) int {
-	if w := TextWidth(l.Name, face) + 20; w > StoreW {
+func storeWidth(name string, face font.Face) int {
+	if w := TextWidth(name, face) + 20; w > StoreW {
 		return w
 	}
 	return StoreW
@@ -71,18 +77,48 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	titleSt := c.Theme.Style(theme.Title)
 	labelSt := c.Theme.Style(theme.Label)
 	storeSt := c.Theme.Style(theme.StoreName)
+	numberSt := c.Theme.Style(theme.Number)
 	if titleSt.Face == nil || labelSt.Face == nil || storeSt.Face == nil {
 		return nil, fmt.Errorf("layout: Config.Theme must supply a face for every role")
 	}
 	s := &Scene{FontSize: c.FontSize}
 	n := len(d.Steps)
 
+	// Numbering runs over the flow before anything is measured, since a
+	// number widens a datastore glyph and adds a band to every box.
+	numbers := make([]string, n)
+	storeNames := make(map[*ast.StoreLink]string)
+	if c.Number {
+		process, store := 0, 0
+		for i := range d.Steps {
+			st := &d.Steps[i]
+			if st.Kind != ast.Entity {
+				process++
+				numbers[i] = fmt.Sprintf("%s%d", c.NumberPrefix, process)
+			}
+			for j := range st.Stores {
+				store++
+				storeNames[&st.Stores[j]] = fmt.Sprintf("D%d %s", store, st.Stores[j].Name)
+			}
+		}
+	}
+	name := func(l *ast.StoreLink) string {
+		if n, ok := storeNames[l]; ok {
+			return n
+		}
+		return l.Name
+	}
+	band := 0
+	if c.Number {
+		band = numberSt.LineH()
+	}
+
 	// Wrap titles up front; the tallest one sets the uniform box height.
 	titles := make([][]string, n)
 	boxH := c.BoxH
 	for i, st := range d.Steps {
 		titles[i] = WrapSegments(st.Title, c.BoxW-2*BoxPad, titleSt.Face)
-		if h := len(titles[i])*titleSt.LineH() + 2*BoxPad; h > boxH {
+		if h := band + len(titles[i])*titleSt.LineH() + 2*BoxPad; h > boxH {
 			boxH = h
 		}
 	}
@@ -91,7 +127,7 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 	// Uniform column width: boxes, widened by the largest store group.
 	colW := c.BoxW
 	for _, st := range d.Steps {
-		if g := groupWidth(st.Stores, storeSt.Face); g > colW {
+		if g := groupWidth(st.Stores, storeSt.Face, name); g > colW {
 			colW = g
 		}
 	}
@@ -209,7 +245,11 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 		x, by := boxX(i), rowY[r]
 		cy := by + c.BoxH/2
 		s.Items = append(s.Items, Rect{X: x, Y: by, W: c.BoxW, H: c.BoxH, Entity: st.Kind == ast.Entity})
-		first := cy + 5 - (len(titles[i])-1)*titleSt.LineH()/2
+		if numbers[i] != "" {
+			s.Items = append(s.Items, Text{X: x + BoxPad, Y: by + BoxPad + numberSt.LineH()/2, S: numbers[i], Anchor: Start, Role: theme.Number})
+		}
+		titleCY := by + band + (c.BoxH-band)/2
+		first := titleCY + 5 - (len(titles[i])-1)*titleSt.LineH()/2
 		for j, ln := range titles[i] {
 			s.Items = append(s.Items, Text{X: x + c.BoxW/2, Y: first + j*titleSt.LineH(), S: ln, Anchor: Middle, Role: theme.Title})
 		}
@@ -252,10 +292,11 @@ func Arrange(d *ast.Diagram, c Config) (*Scene, error) {
 			}
 		}
 		if len(st.Stores) > 0 {
-			sx := x + c.BoxW/2 - groupWidth(st.Stores, storeSt.Face)/2
-			for _, l := range st.Stores {
-				sw := storeWidth(l, storeSt.Face)
-				emitStore(s, l, sx, sw, x, by, side[i], c)
+			sx := x + c.BoxW/2 - groupWidth(st.Stores, storeSt.Face, name)/2
+			for j := range st.Stores {
+				l := &st.Stores[j]
+				sw := storeWidth(name(l), storeSt.Face)
+				emitStore(s, *l, name(l), sx, sw, x, by, side[i], c)
 				sx += sw + StoreGap
 			}
 		}
@@ -354,10 +395,11 @@ func emitLabelLines(s *Scene, label string, x, y int, anchor Anchor, st theme.St
 }
 
 // groupWidth is the total width of a step's side-by-side store glyphs.
-func groupWidth(links []ast.StoreLink, face font.Face) int {
+func groupWidth(links []ast.StoreLink, face font.Face, name func(*ast.StoreLink) string) int {
 	w := 0
-	for i, l := range links {
-		w += storeWidth(l, face)
+	for i := range links {
+		l := &links[i]
+		w += storeWidth(name(l), face)
 		if i > 0 {
 			w += StoreGap
 		}
@@ -370,7 +412,7 @@ func groupWidth(links []ast.StoreLink, face font.Face) int {
 // above, -1 below), plus its arrows and their labels. Arrow x positions
 // follow the glyph center but are clamped into the box span so arrows
 // always leave the box.
-func emitStore(s *Scene, l ast.StoreLink, sx, sw, bx, by, side int, c Config) {
+func emitStore(s *Scene, l ast.StoreLink, name string, sx, sw, bx, by, side int, c Config) {
 	nameSt := c.Theme.Style(theme.StoreName)
 	labelSt := c.Theme.Style(theme.Label)
 	cx := sx + sw/2
@@ -389,7 +431,7 @@ func emitStore(s *Scene, l ast.StoreLink, sx, sw, bx, by, side int, c Config) {
 	s.Items = append(s.Items,
 		Line{X1: sx, Y1: upper, X2: sx + sw, Y2: upper, Structural: true},
 		Line{X1: sx, Y1: lower, X2: sx + sw, Y2: lower, Structural: true},
-		Text{X: cx, Y: upper + (StoreH+int(nameSt.Size))/2 - 2, S: l.Name, Anchor: Middle, Role: theme.StoreName},
+		Text{X: cx, Y: upper + (StoreH+int(nameSt.Size))/2 - 2, S: name, Anchor: Middle, Role: theme.StoreName},
 	)
 	clamp := func(v int) int {
 		if min := bx + 20; v < min {

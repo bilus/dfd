@@ -7,6 +7,7 @@ import (
 
 	"github.com/bilus/dfd/layout"
 	"github.com/bilus/dfd/render"
+	"github.com/bilus/dfd/theme"
 )
 
 func pngScene() *layout.Scene {
@@ -45,5 +46,27 @@ func TestPNGDeterministicAndScaled(t *testing.T) {
 	r, g, bl, _ = img.At(590, 190).RGBA()
 	if r < 0xc000 || g < 0xc000 || bl < 0xc000 {
 		t.Errorf("expected white background pixel at (590,190), got r=%x g=%x b=%x", r, g, bl)
+	}
+}
+
+// Every role must rasterize: a role added to the theme without a face
+// here used to panic inside the font layer.
+func TestPNGDrawsEveryTextRole(t *testing.T) {
+	for _, name := range []string{"default", "plex"} {
+		th, err := theme.Lookup(name, 13)
+		if err != nil {
+			t.Fatalf("theme: %v", err)
+		}
+		s := &layout.Scene{W: 300, H: 100, FontSize: 13}
+		for i, r := range theme.Roles() {
+			s.Items = append(s.Items, layout.Text{X: 20, Y: 20 + 15*i, S: "x", Role: r})
+		}
+		var b bytes.Buffer
+		if err := render.PNG(s, th, 1, &b); err != nil {
+			t.Fatalf("theme %q: %v", name, err)
+		}
+		if b.Len() == 0 {
+			t.Errorf("theme %q produced no PNG", name)
+		}
 	}
 }

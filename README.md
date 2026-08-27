@@ -68,6 +68,8 @@ so PNG output is identical everywhere with no fonts installed.
 - `> label` / `< label` — arrows, label optional; before a process it is
   the flow arrow into it, before a `|store|` line it is that store's
   send (`>`) / return (`<`) arrow
+- `{Text}` — external entity, a source or sink outside the system; it
+  takes a slot in the flow like a process
 - `|Text|` — datastore (two horizontal lines) attached to the nearest
   preceding process
 - `#` — comment; blank lines and indentation are cosmetic
@@ -91,7 +93,15 @@ theme.
 --font-size N     label font size (default 13)
 --scale N         PNG resolution multiplier (default 2)
 --theme NAME      default or plex
+--number          number processes 1, 2, 3 and datastores D1, D2
+--number-prefix P prefix process numbers, e.g. "2." for 2.1, 2.2
 ```
+
+`--number` is off by default. It numbers processes in flow order and
+datastores D1, D2, skipping external entities, which is the DFD
+convention. Each theme draws an entity in its own idiom: the default
+theme uses the shadowed Gane-Sarson terminator, plex the dashed grey
+outline it already uses for things outside the system.
 
 Full syntax, error catalogue, and rendering rules:
 [docs/superpowers/specs/2026-07-23-text-to-dfd-design.md](docs/superpowers/specs/2026-07-23-text-to-dfd-design.md).
