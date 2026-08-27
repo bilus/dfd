@@ -21,76 +21,42 @@ func SVG(s *layout.Scene, th theme.Theme, w io.Writer) error {
 	p.f("  <defs>\n    <marker id=\"ah\" viewBox=\"0 0 10 10\" refX=\"9\" refY=\"5\" markerWidth=\"%d\" markerHeight=\"%d\" orient=\"auto\">\n      <path d=\"M0,0L10,5L0,10z\" fill=\"%s\"/>\n    </marker>\n  </defs>\n",
 		th.ArrowHead, th.ArrowHead, th.ArrowColor)
 	p.f(`  <rect x="0" y="0" width="%d" height="%d" fill="%s"/>`+"\n", s.W, s.H, th.Canvas)
-	for _, it := range s.Items {
-		switch v := it.(type) {
-		case layout.Rect:
-			fill, stroke, dash := th.BoxFill, th.BoxStroke, ""
-			if v.Entity {
-				fill, stroke, dash = th.EntityFill, th.EntityStroke, th.EntityDash
-				if th.EntityShadow > 0 {
-					p.f(`  <rect x="%d" y="%d" width="%d" height="%d"%s fill="%s" stroke="%s" stroke-width="%s"/>`+"\n",
-						v.X+th.EntityShadow, v.Y+th.EntityShadow, v.W, v.H, radius(th), fill, stroke, num(th.BoxStrokeW))
-				}
-			}
-			p.f(`  <rect x="%d" y="%d" width="%d" height="%d"%s fill="%s" stroke="%s" stroke-width="%s"%s/>`+"\n",
-				v.X, v.Y, v.W, v.H, radius(th), fill, stroke, num(th.BoxStrokeW), dashAttr(dash))
-			if th.AccentW > 0 && (!v.Entity || th.EntityAccent) {
-				y, h := insetAccent(v, th)
-				p.f(`  <rect x="%d" y="%d" width="%d" height="%d" fill="%s"/>`+"\n",
-					v.X, y, th.AccentW, h, th.AccentColor)
-			}
-		case layout.Line:
-			stroke, width := th.ArrowColor, th.ArrowStrokeW
-			if v.Structural {
-				stroke, width = th.StructStroke, th.StructStrokeW
-			}
-			marker := ""
-			if v.Head {
-				marker = ` marker-end="url(#ah)"`
-			}
-			p.f(`  <line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="%s"%s/>`+"\n",
-				v.X1, v.Y1, v.X2, v.Y2, stroke, num(width), marker)
-		case layout.Text:
-			st := th.Style(v.Role)
-			if th.LabelChip && v.Role == theme.Label {
-				x, y, cw, ch := chip(v, st)
-				p.f(`  <rect x="%d" y="%d" width="%d" height="%d" rx="3" fill="%s"/>`+"\n", x, y, cw, ch, th.Canvas)
-			}
-			p.f(`  <text x="%d" y="%d" fill="%s"%s%s%s%s>%s</text>`+"\n",
-				v.X, v.Y, st.Color, anchorAttr(v.Anchor), familyAttr(st, root), sizeAttr(st, s.FontSize), weightAttr(st), escape(v.S))
-		}
-	}
+	paint(s, th, &svgCanvas{p: p, root: root, rootSize: s.FontSize})
 	p.f("</svg>\n")
 	return p.err
 }
 
-// chip is the box drawn behind an arrow label so the line it crosses
-// does not run through the text.
-func chip(t layout.Text, st theme.Style) (x, y, w, h int) {
-	const padX = theme.ChipPadX
-	w = layout.TextWidth(t.S, st.Face) + 2*padX
-	// Exactly one line tall, so the chips of a wrapped label tile
-	// instead of erasing the line above.
-	h = st.LineH()
-	switch t.Anchor {
-	case layout.Middle:
-		x = t.X - w/2
-	case layout.End:
-		x = t.X + padX - w
-	default:
-		x = t.X - padX
+type svgCanvas struct {
+	p        *printer
+	root     theme.Style
+	rootSize int
+}
+
+func (c *svgCanvas) Rect(x, y, w, h, radius int, fill, stroke, dash string, strokeW float64) {
+	outline := ""
+	if stroke != "" {
+		outline = fmt.Sprintf(` stroke="%s" stroke-width="%s"`, stroke, num(strokeW))
 	}
-	return x, t.Y - int(st.Size)/3 - h/2, w, h
+	c.p.f(`  <rect x="%d" y="%d" width="%d" height="%d"%s fill="%s"%s%s/>`+"\n",
+		x, y, w, h, radiusAttr(radius), fill, outline, dashAttr(dash))
+}
+
+func (c *svgCanvas) Line(x1, y1, x2, y2 int, stroke string, strokeW float64, head bool) {
+	marker := ""
+	if head {
+		marker = ` marker-end="url(#ah)"`
+	}
+	c.p.f(`  <line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" stroke-width="%s"%s/>`+"\n",
+		x1, y1, x2, y2, stroke, num(strokeW), marker)
+}
+
+func (c *svgCanvas) Text(x, y int, s string, anchor layout.Anchor, st theme.Style) {
+	c.p.f(`  <text x="%d" y="%d" fill="%s"%s%s%s%s>%s</text>`+"\n",
+		x, y, st.Color, anchorAttr(anchor), familyAttr(st, c.root), sizeAttr(st, c.rootSize), weightAttr(st), escape(s))
 }
 
 // num formats a stroke width the way it is written by hand: 2, not 2.0.
 func num(f float64) string { return strconv.FormatFloat(f, 'g', -1, 64) }
-
-// insetAccent shortens the accent bar by the corner radius so it stays
-// inside the box outline instead of poking past the rounded corners.
-func insetAccent(r layout.Rect, th theme.Theme) (y, h int) {
-	return r.Y + th.BoxRadius, r.H - 2*th.BoxRadius
-}
 
 func dashAttr(dash string) string {
 	if dash == "" {
@@ -99,11 +65,11 @@ func dashAttr(dash string) string {
 	return fmt.Sprintf(` stroke-dasharray="%s"`, dash)
 }
 
-func radius(th theme.Theme) string {
-	if th.BoxRadius == 0 {
+func radiusAttr(radius int) string {
+	if radius == 0 {
 		return ""
 	}
-	return fmt.Sprintf(` rx="%d"`, th.BoxRadius)
+	return fmt.Sprintf(` rx="%d"`, radius)
 }
 
 func anchorAttr(a layout.Anchor) string {
